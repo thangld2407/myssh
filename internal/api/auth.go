@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -24,33 +25,62 @@ var (
 	loginAttemptsMu sync.Mutex
 )
 
-func checkRateLimit(ip string) error {
+func checkRateLimit(cfg *config.Config, ip string) error {
+	if cfg != nil && !cfg.RateLimitEnabled {
+		return nil
+	}
 	loginAttemptsMu.Lock()
 	defer loginAttemptsMu.Unlock()
+
+	window := 5 * time.Minute
+	maxAttempts := 5
+	if cfg != nil {
+		if cfg.RateLimitWindowMinutes > 0 {
+			window = time.Duration(cfg.RateLimitWindowMinutes) * time.Minute
+		}
+		if cfg.RateLimitMaxAttempts > 0 {
+			maxAttempts = cfg.RateLimitMaxAttempts
+		}
+	}
+
+	// Periodic cleanup of stale attempts (older than 2x window)
+	for ipKey, att := range loginAttempts {
+		if time.Since(att.lastTried) > 2*window {
+			delete(loginAttempts, ipKey)
+		}
+	}
 
 	attempt, exists := loginAttempts[ip]
 	if !exists {
 		return nil
 	}
 
-	if time.Since(attempt.lastTried) > 5*time.Minute {
+	if time.Since(attempt.lastTried) > window {
 		delete(loginAttempts, ip)
 		return nil
 	}
 
-	if attempt.count >= 5 {
-		remaining := 5*time.Minute - time.Since(attempt.lastTried)
+	if attempt.count >= maxAttempts {
+		remaining := window - time.Since(attempt.lastTried)
 		return fmt.Errorf("Quá nhiều lần đăng nhập thất bại. Vui lòng chờ %d giây trước khi thử lại", int(remaining.Seconds()))
 	}
 	return nil
 }
 
-func recordFailedAttempt(ip string) {
+func recordFailedAttempt(cfg *config.Config, ip string) {
+	if cfg != nil && !cfg.RateLimitEnabled {
+		return
+	}
 	loginAttemptsMu.Lock()
 	defer loginAttemptsMu.Unlock()
 
+	window := 5 * time.Minute
+	if cfg != nil && cfg.RateLimitWindowMinutes > 0 {
+		window = time.Duration(cfg.RateLimitWindowMinutes) * time.Minute
+	}
+
 	attempt, exists := loginAttempts[ip]
-	if !exists || time.Since(attempt.lastTried) > 5*time.Minute {
+	if !exists || time.Since(attempt.lastTried) > window {
 		loginAttempts[ip] = &failedAttempt{count: 1, lastTried: time.Now()}
 		return
 	}
@@ -99,6 +129,7 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu cấu hình không hợp lệ"})
 		return
 	}
+	req.Username = strings.TrimSpace(req.Username)
 
 	if len(req.Password) < 8 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Mật khẩu quản trị phải có độ dài tối thiểu 8 ký tự"})
@@ -155,7 +186,7 @@ type LoginRequest struct {
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	clientIP := c.ClientIP()
-	if err := checkRateLimit(clientIP); err != nil {
+	if err := checkRateLimit(h.cfg, clientIP); err != nil {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
 		return
 	}
@@ -165,16 +196,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Yêu cầu đăng nhập không hợp lệ"})
 		return
 	}
+	req.Username = strings.TrimSpace(req.Username)
 
 	var user db.User
 	if err := db.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		recordFailedAttempt(clientIP)
+		recordFailedAttempt(h.cfg, clientIP)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tên đăng nhập hoặc mật khẩu không chính xác"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		recordFailedAttempt(clientIP)
+		recordFailedAttempt(h.cfg, clientIP)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tên đăng nhập hoặc mật khẩu không chính xác"})
 		return
 	}

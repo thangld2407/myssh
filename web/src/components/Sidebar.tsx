@@ -9,10 +9,11 @@ import {
   LogOut,
   Folder,
   Plus,
-  Terminal
+  Terminal,
+  Code2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { Host } from '../types';
+import { Host, FeatureFlags } from '../types';
 
 interface SidebarProps {
   activeView: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap';
@@ -21,7 +22,9 @@ interface SidebarProps {
   selectedFolder: string;
   onSelectFolder: (folder: string) => void;
   onAddHost: () => void;
+  onOpenSnippets: () => void;
   onOpenSponsor: () => void;
+  features?: FeatureFlags;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -31,7 +34,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   selectedFolder,
   onSelectFolder,
   onAddHost,
+  onOpenSnippets,
   onOpenSponsor,
+  features,
 }) => {
   const { user, logout } = useAuth();
   const folders = Array.from(new Set(hosts.map((h) => h.folder || 'General')));
@@ -88,29 +93,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <span>Key Vault</span>
             </button>
 
-            <button
-              onClick={() => onSelectView('tunnels')}
-              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
-                activeView === 'tunnels'
-                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Network className={`w-4 h-4 ${activeView === 'tunnels' ? 'text-slate-900' : 'text-slate-500'}`} />
-              <span>Port Forwarding</span>
-            </button>
+            {features?.enable_tunnels !== false && (
+              <button
+                onClick={() => onSelectView('tunnels')}
+                className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
+                  activeView === 'tunnels'
+                    ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <Network className={`w-4 h-4 ${activeView === 'tunnels' ? 'text-slate-900' : 'text-slate-500'}`} />
+                <span>Port Forwarding</span>
+              </button>
+            )}
 
-            <button
-              onClick={() => onSelectView('audit')}
-              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
-                activeView === 'audit'
-                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <History className={`w-4 h-4 ${activeView === 'audit' ? 'text-slate-900' : 'text-slate-500'}`} />
-              <span>Session Audit</span>
-            </button>
+            {features?.enable_session_audit !== false && (
+              <button
+                onClick={() => onSelectView('audit')}
+                className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
+                  activeView === 'audit'
+                    ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <History className={`w-4 h-4 ${activeView === 'audit' ? 'text-slate-900' : 'text-slate-500'}`} />
+                <span>Session Audit</span>
+              </button>
+            )}
+
+            {features?.enable_snippets !== false && (
+              <button
+                onClick={onOpenSnippets}
+                className="w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              >
+                <Code2 className="w-4 h-4 text-emerald-600" />
+                <span>Lệnh mẫu (Snippets)</span>
+              </button>
+            )}
           </div>
 
           {/* Folder Hierarchy */}
@@ -171,32 +190,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Community */}
-          <div className="space-y-1.5 pt-3.5 border-t border-slate-200">
-            <button
-              onClick={() => onSelectView('roadmap')}
-              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
-                activeView === 'roadmap'
-                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              <Sparkles className="w-4 h-4 text-slate-500" />
-              <span>Public Roadmap</span>
-            </button>
+          {(features?.enable_public_roadmap !== false || features?.enable_sponsor !== false) && (
+            <div className="space-y-1.5 pt-3.5 border-t border-slate-200">
+              {features?.enable_public_roadmap !== false && (
+                <button
+                  onClick={() => onSelectView('roadmap')}
+                  className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
+                    activeView === 'roadmap'
+                      ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <Sparkles className="w-4 h-4 text-slate-500" />
+                  <span>Public Roadmap</span>
+                </button>
+              )}
 
-            <button
-              onClick={onOpenSponsor}
-              className="w-full h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-between text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 transition-all duration-150 active:scale-[0.98] border border-slate-200 shadow-2xs"
-            >
-              <div className="flex items-center gap-2.5">
-                <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
-                <span>Ủng hộ dự án</span>
-              </div>
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white text-rose-600 font-semibold border border-rose-100 shadow-2xs">
-                Sponsor
-              </span>
-            </button>
-          </div>
+              {features?.enable_sponsor !== false && (
+                <button
+                  onClick={onOpenSponsor}
+                  className="w-full h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-between text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 transition-all duration-150 active:scale-[0.98] border border-slate-200 shadow-2xs"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
+                    <span>Ủng hộ dự án</span>
+                  </div>
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white text-rose-600 font-semibold border border-rose-100 shadow-2xs">
+                    Sponsor
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

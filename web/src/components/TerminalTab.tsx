@@ -3,7 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap } from 'lucide-react';
-import { Host } from '../types';
+import { Host, FeatureFlags } from '../types';
 import { getAuthToken } from '../services/api';
 import { SftpPanel } from './SftpPanel';
 import { SnippetModal } from './SnippetModal';
@@ -12,9 +12,10 @@ interface TerminalTabProps {
   host: Host;
   tabId: string;
   onClose: () => void;
+  features?: FeatureFlags;
 }
 
-export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
+export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, features }) => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermInstance = useRef<Terminal | null>(null);
   const fitAddonInstance = useRef<FitAddon | null>(null);
@@ -307,21 +308,23 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
         {/* Right Toolbar */}
         <div className="flex items-center space-x-2">
           {/* MobaXterm-style Split SFTP Button */}
-          <button
-            onClick={() => {
-              setShowSplitSftp((prev) => !prev);
-              setTimeout(() => fitAddonInstance.current?.fit(), 60);
-            }}
-            className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-sans font-semibold transition active:scale-95 border ${
-              showSplitSftp
-                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
-            }`}
-            title="Mở/Đóng cây thư mục SFTP song song với Terminal (như MobaXterm)"
-          >
-            <Columns className="w-3.5 h-3.5" />
-            <span>Split SFTP</span>
-          </button>
+          {features?.enable_sftp !== false && (
+            <button
+              onClick={() => {
+                setShowSplitSftp((prev) => !prev);
+                setTimeout(() => fitAddonInstance.current?.fit(), 60);
+              }}
+              className={`flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-sans font-semibold transition active:scale-95 border ${
+                showSplitSftp
+                  ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
+              }`}
+              title="Mở/Đóng cây thư mục SFTP song song với Terminal (như MobaXterm)"
+            >
+              <Columns className="w-3.5 h-3.5" />
+              <span>Split SFTP</span>
+            </button>
+          )}
 
           {/* Font Controls */}
           <div className="flex items-center h-8 bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
@@ -380,29 +383,31 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
       </div>
 
       {/* Snippet Quick Bar (Light Toolbar) */}
-      <div className="h-9 bg-slate-50 border-b border-slate-200 px-3.5 flex items-center space-x-2 overflow-x-auto select-none shrink-0">
-        <button
-          onClick={() => setShowSnippetModal(true)}
-          className="flex items-center gap-1.5 h-6 px-2.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold shadow-2xs transition active:scale-95"
-          title="Mở thư viện lệnh mẫu DevOps đầy đủ"
-        >
-          <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600" />
-          <span>Snippets Library</span>
-        </button>
-
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold ml-1 mr-1">
-          Lệnh nhanh:
-        </span>
-        {snippets.map((snip) => (
+      {features?.enable_snippets !== false && (
+        <div className="h-9 bg-slate-50 border-b border-slate-200 px-3.5 flex items-center space-x-2 overflow-x-auto select-none shrink-0">
           <button
-            key={snip.label}
-            onClick={() => sendSnippet(snip.cmd)}
-            className="h-6 px-2.5 rounded-md bg-white hover:bg-slate-100 active:scale-95 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-mono whitespace-nowrap transition shadow-2xs"
+            onClick={() => setShowSnippetModal(true)}
+            className="flex items-center gap-1.5 h-6 px-2.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold shadow-2xs transition active:scale-95"
+            title="Mở thư viện lệnh mẫu DevOps đầy đủ"
           >
-            {snip.label}
+            <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600" />
+            <span>Snippets Library</span>
           </button>
-        ))}
-      </div>
+
+          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold ml-1 mr-1">
+            Lệnh nhanh:
+          </span>
+          {snippets.map((snip) => (
+            <button
+              key={snip.label}
+              onClick={() => sendSnippet(snip.cmd)}
+              className="h-6 px-2.5 rounded-md bg-white hover:bg-slate-100 active:scale-95 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-mono whitespace-nowrap transition shadow-2xs"
+            >
+              {snip.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Main Terminal View (Supports Split-View with Embedded SFTP) */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">

@@ -20,7 +20,7 @@ import {
   Activity,
   FolderDown
 } from 'lucide-react';
-import { Host } from '../types';
+import { Host, FeatureFlags } from '../types';
 import { api } from '../services/api';
 
 interface HostListProps {
@@ -34,6 +34,7 @@ interface HostListProps {
   onImportSSHConfig: () => void;
   onRefresh: () => void;
   onOpenCredentialModal: () => void;
+  features?: FeatureFlags;
 }
 
 export const HostList: React.FC<HostListProps> = ({
@@ -46,6 +47,7 @@ export const HostList: React.FC<HostListProps> = ({
   onAddHost,
   onImportSSHConfig,
   onRefresh,
+  features,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -200,14 +202,16 @@ export const HostList: React.FC<HostListProps> = ({
           </button>
 
           {/* Import SSH Config Button */}
-          <button
-            onClick={onImportSSHConfig}
-            className="h-9 px-3 rounded-lg bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 border border-slate-200 shadow-2xs"
-            title="Nhập máy chủ từ file ~/.ssh/config"
-          >
-            <FileUp className="w-3.5 h-3.5 text-slate-500" />
-            <span className="hidden sm:inline">Import Config</span>
-          </button>
+          {features?.enable_import_ssh_config !== false && (
+            <button
+              onClick={onImportSSHConfig}
+              className="h-9 px-3 rounded-lg bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 border border-slate-200 shadow-2xs"
+              title="Nhập máy chủ từ file ~/.ssh/config"
+            >
+              <FileUp className="w-3.5 h-3.5 text-slate-500" />
+              <span className="hidden sm:inline">Import Config</span>
+            </button>
+          )}
 
           {/* Primary Action Button: Modern Solid Black */}
           <button
@@ -227,20 +231,22 @@ export const HostList: React.FC<HostListProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold text-xs uppercase tracking-wider">
-                  <th className="py-3 px-3 w-10 text-center">
-                    <input
-                      type="checkbox"
-                      checked={filteredHosts.length > 0 && selectedHostIds.length === filteredHosts.length}
-                      onChange={() => {
-                        if (selectedHostIds.length === filteredHosts.length) {
-                          setSelectedHostIds([]);
-                        } else {
-                          setSelectedHostIds(filteredHosts.map((h) => h.id));
-                        }
-                      }}
-                      className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                    />
-                  </th>
+                  {features?.enable_multi_exec !== false && (
+                    <th className="py-3 px-3 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredHosts.length > 0 && selectedHostIds.length === filteredHosts.length}
+                        onChange={() => {
+                          if (selectedHostIds.length === filteredHosts.length) {
+                            setSelectedHostIds([]);
+                          } else {
+                            setSelectedHostIds(filteredHosts.map((h) => h.id));
+                          }
+                        }}
+                        className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                      />
+                    </th>
+                  )}
                   <th className="py-3 px-4 w-16 text-center">Status</th>
                   <th className="py-3 px-4">Tên Máy Chủ</th>
                   <th className="py-3 px-4">Địa Chỉ IP / Host</th>
@@ -265,18 +271,20 @@ export const HostList: React.FC<HostListProps> = ({
                       }`}
                     >
                       {/* Checkbox */}
-                      <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => {
-                            setSelectedHostIds((prev) =>
-                              prev.includes(host.id) ? prev.filter((i) => i !== host.id) : [...prev, host.id]
-                            );
-                          }}
-                          className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
-                        />
-                      </td>
+                      {features?.enable_multi_exec !== false && (
+                        <td className="py-3.5 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedHostIds((prev) =>
+                                prev.includes(host.id) ? prev.filter((i) => i !== host.id) : [...prev, host.id]
+                              );
+                            }}
+                            className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                          />
+                        </td>
+                      )}
 
                       {/* Status */}
                       <td className="py-3.5 px-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -392,14 +400,16 @@ export const HostList: React.FC<HostListProps> = ({
                           </button>
 
                           {/* Secondary CTA: SFTP Explorer */}
-                          <button
-                            onClick={() => onOpenSftp(host)}
-                            className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-all duration-150 border border-slate-200/60"
-                            title="Quản lý File SFTP"
-                          >
-                            <FolderDown className="w-3.5 h-3.5 text-slate-600" />
-                            <span>SFTP</span>
-                          </button>
+                          {features?.enable_sftp !== false && (
+                            <button
+                              onClick={() => onOpenSftp(host)}
+                              className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-all duration-150 border border-slate-200/60"
+                              title="Quản lý File SFTP"
+                            >
+                              <FolderDown className="w-3.5 h-3.5 text-slate-600" />
+                              <span>SFTP</span>
+                            </button>
+                          )}
 
                           {/* More Options Dropdown */}
                           <div className="relative action-menu-container">
@@ -590,16 +600,18 @@ export const HostList: React.FC<HostListProps> = ({
                       Terminal
                     </button>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenSftp(host);
-                      }}
-                      className="h-9 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-150 border border-slate-200"
-                    >
-                      <FolderDown className="w-4 h-4 text-slate-600" />
-                      SFTP
-                    </button>
+                    {features?.enable_sftp !== false && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenSftp(host);
+                        }}
+                        className="h-9 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-150 border border-slate-200"
+                      >
+                        <FolderDown className="w-4 h-4 text-slate-600" />
+                        SFTP
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -609,7 +621,7 @@ export const HostList: React.FC<HostListProps> = ({
       </div>
 
       {/* Floating Multi-Exec Action Dock */}
-      {selectedHostIds.length > 0 && (
+      {features?.enable_multi_exec !== false && selectedHostIds.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-950 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 animate-modal border border-slate-800">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />

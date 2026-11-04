@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Terminal, Shield, Lock, ArrowRight, X, Server, Search, Heart, Sparkles, Zap, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
-import { Host } from './types';
+import { Host, FeatureFlags } from './types';
 import { api } from './services/api';
 import { Sidebar } from './components/Sidebar';
 import { HostList } from './components/HostList';
@@ -45,6 +45,17 @@ export const App: React.FC = () => {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showSnippetModal, setShowSnippetModal] = useState(false);
 
+  const [features, setFeatures] = useState<FeatureFlags>({
+    enable_sftp: true,
+    enable_multi_exec: true,
+    enable_session_audit: true,
+    enable_tunnels: true,
+    enable_import_ssh_config: true,
+    enable_snippets: true,
+    enable_public_roadmap: true,
+    enable_sponsor: true,
+  });
+
   // Login form state
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
@@ -61,6 +72,16 @@ export const App: React.FC = () => {
       console.error('Error fetching hosts:', err);
     }
   };
+
+  useEffect(() => {
+    api.getSystemFeatures()
+      .then((res) => {
+        if (res?.features) {
+          setFeatures(res.features);
+        }
+      })
+      .catch((err) => console.error('Failed to load system features:', err));
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -261,6 +282,7 @@ export const App: React.FC = () => {
         }}
         onOpenSnippets={() => setShowSnippetModal(true)}
         onOpenSponsor={() => setShowSponsorModal(true)}
+        features={features}
       />
 
       {/* 2. Right Main Application Body */}
@@ -281,7 +303,7 @@ export const App: React.FC = () => {
               Workspace
             </button>
 
-            {multiExecHosts && (
+            {features.enable_multi_exec && multiExecHosts && (
               <div
                 onClick={() => setActiveTabId('multi-exec')}
                 className={`h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-2 transition cursor-pointer border active:scale-95 ${
@@ -375,6 +397,7 @@ export const App: React.FC = () => {
                 onImportSSHConfig={() => setShowImportModal(true)}
                 onRefresh={fetchHosts}
                 onOpenCredentialModal={() => setShowCredentialModal(true)}
+                features={features}
               />
             )}
 
@@ -406,11 +429,12 @@ export const App: React.FC = () => {
                 host={tab.host}
                 tabId={tab.id}
                 onClose={() => handleCloseTerminal(tab.id)}
+                features={features}
               />
             </div>
           ))}
           {/* Multi-Exec Broadcast Terminal */}
-          {multiExecHosts && (
+          {features.enable_multi_exec && multiExecHosts && (
             <div className={`h-full w-full ${activeTabId === 'multi-exec' ? 'block' : 'hidden'}`}>
               <MultiExecTerminal
                 hosts={multiExecHosts}
@@ -482,6 +506,7 @@ export const App: React.FC = () => {
         onOpenImport={() => setShowImportModal(true)}
         onOpenSnippets={() => setShowSnippetModal(true)}
         onChangeTheme={() => {}}
+        features={features}
       />
     </div>
   );

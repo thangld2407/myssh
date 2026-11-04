@@ -65,3 +65,36 @@ export interface FileItem {
   mod_time: string;
   mode: string;
 }
+
+export interface Snippet {
+  id: string;
+  user_id?: string;
+  name: string;
+  command: string;
+  description: string;
+  category: string;
+  tags: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FeatureFlags {
+  enable_sftp: boolean;
+  enable_multi_exec: boolean;
+  enable_session_audit: boolean;
+  enable_tunnels: boolean;
+  enable_import_ssh_config: boolean;
+  enable_snippets: boolean;
+  enable_public_roadmap: boolean;
+  enable_sponsor: boolean;
+}
+
+export interface SystemFeaturesResponse {
+  version: string;
+  features: FeatureFlags;
+  rate_limit?: {
+    enabled: boolean;
+    max_attempts: number;
+    window_minutes: number;
+  };
+}

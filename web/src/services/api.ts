@@ -1,4 +1,4 @@
-import { Credential, Host, SessionAudit, Tunnel, FileItem, User } from '../types';
+import { Credential, Host, SessionAudit, Tunnel, FileItem, User, Snippet, SystemFeaturesResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -48,13 +48,20 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     throw new Error(errorMsg);
   }
 
-  if (res.headers.get('Content-Type')?.includes('application/json')) {
+  const contentType = res.headers.get('Content-Type') || '';
+  if (contentType.includes('application/json')) {
     return res.json();
+  }
+  if (contentType.includes('text/html')) {
+    throw new Error(`Endpoint ${endpoint} trả về HTML thay vì dữ liệu JSON. Máy chủ backend cần được khởi động lại.`);
   }
   return res.text() as unknown as T;
 }
 
 export const api = {
+  // System Config & Features
+  getSystemFeatures: () => request<SystemFeaturesResponse>('/system/features'),
+
   // Auth
   getSetupStatus: () => request<{ initialized: boolean }>('/auth/setup-status'),
   setupAdmin: (data: { username: string; password: string; full_name?: string }) =>
@@ -151,6 +158,35 @@ export const api = {
     }),
   deleteSftp: (hostId: string, path: string) =>
     request<{ message: string }>(`/sftp/${hostId}/delete?path=${encodeURIComponent(path)}`, {
+      method: 'DELETE',
+    }),
+  readSftp: (hostId: string, path: string) =>
+    request<{ path: string; content: string; size: number }>(`/sftp/${hostId}/read?path=${encodeURIComponent(path)}`),
+  writeSftp: (hostId: string, path: string, content: string) =>
+    request<{ message: string; path: string; size: number }>(`/sftp/${hostId}/write`, {
+      method: 'POST',
+      body: JSON.stringify({ path, content }),
+    }),
+
+  // Snippets
+  getSnippets: (category?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (search) params.append('q', search);
+    return request<Snippet[]>(`/snippets?${params.toString()}`);
+  },
+  createSnippet: (data: Partial<Snippet>) =>
+    request<Snippet>('/snippets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateSnippet: (id: string, data: Partial<Snippet>) =>
+    request<Snippet>(`/snippets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteSnippet: (id: string) =>
+    request<{ message: string }>(`/snippets/${id}`, {
       method: 'DELETE',
     }),
 

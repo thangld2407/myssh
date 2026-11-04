@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Search, Terminal, HardDrive, KeyRound, Network, History, Heart, Sparkles, Server, ArrowRight, Code2 } from 'lucide-react';
-import { Host } from '../types';
+import { Host, FeatureFlags } from '../types';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -13,6 +13,7 @@ interface CommandPaletteProps {
   onOpenImport?: () => void;
   onOpenSnippets?: () => void;
   onChangeTheme: () => void;
+  features?: FeatureFlags;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -25,6 +26,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenSponsor,
   onOpenImport,
   onOpenSnippets,
+  features,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -53,34 +55,34 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   if (!isOpen) return null;
 
   const actions = [
-    {
+    ...(features?.enable_import_ssh_config !== false ? [{
       id: 'import-ssh',
       title: 'Import Cấu Hình Máy Chủ (~/.ssh/config)',
       category: 'Actions',
       icon: <Server className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onOpenImport?.(); onClose(); },
-    },
-    {
+    }] : []),
+    ...(features?.enable_snippets !== false ? [{
       id: 'snippets',
       title: 'Kho Lệnh Mẫu & Snippet Library (DevOps Quick Commands)',
       category: 'Actions',
       icon: <Code2 className="w-3.5 h-3.5 text-emerald-500" />,
       run: () => { onOpenSnippets?.(); onClose(); },
-    },
-    {
+    }] : []),
+    ...(features?.enable_sponsor !== false ? [{
       id: 'sponsor',
       title: 'Sponsor & Ủng Hộ Dự Án (Build in Public)',
       category: 'Community',
       icon: <Heart className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onOpenSponsor(); onClose(); },
-    },
-    {
+    }] : []),
+    ...(features?.enable_public_roadmap !== false ? [{
       id: 'view-roadmap',
       title: 'Public Roadmap & Biểu Quyết Tính Năng',
       category: 'Navigation',
       icon: <Sparkles className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('roadmap'); onClose(); },
-    },
+    }] : []),
     {
       id: 'view-hosts',
       title: 'Quản Lý Máy Chủ & Hosts',
@@ -95,20 +97,20 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <KeyRound className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('credentials'); onClose(); },
     },
-    {
+    ...(features?.enable_tunnels !== false ? [{
       id: 'view-tunnels',
       title: 'SSH Port Forwarding & Tunnels',
       category: 'Navigation',
       icon: <Network className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('tunnels'); onClose(); },
-    },
-    {
+    }] : []),
+    ...(features?.enable_session_audit !== false ? [{
       id: 'view-audit',
       title: 'Session Audit Logs',
       category: 'Navigation',
       icon: <History className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('audit'); onClose(); },
-    },
+    }] : []),
   ];
 
   const hostItems = hosts.map((h) => ({
@@ -119,13 +121,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     run: () => { onOpenTerminal(h); onClose(); },
   }));
 
-  const sftpItems = hosts.map((h) => ({
+  const sftpItems = features?.enable_sftp !== false ? hosts.map((h) => ({
     id: `host-sftp-${h.id}`,
     title: `Mở SFTP: ${h.name} (${h.hostname})`,
     category: 'SFTP',
     icon: <HardDrive className="w-3.5 h-3.5 text-zinc-400" />,
     run: () => { onOpenSftp(h); onClose(); },
-  }));
+  })) : [];
 
   const allItems = [...actions, ...hostItems, ...sftpItems];
 
