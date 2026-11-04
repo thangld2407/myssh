@@ -6,6 +6,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
+  setup: (username: string, password: string, fullName?: string) => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -14,6 +16,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  isInitialized: true,
+  setup: async () => {},
   login: async () => {},
   logout: () => {},
 });
@@ -21,26 +25,50 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(true);
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
+    // 1. Check if server needs first-run setup
+    api.getSetupStatus()
+      .then((status) => {
+        setIsInitialized(status.initialized);
+        if (!status.initialized) {
+          clearAuthToken();
+          setIsLoading(false);
+          return;
+        }
 
-    api.getMe()
-      .then((userData) => {
-        setUser(userData);
+        // 2. If initialized, check existing token
+        const token = getAuthToken();
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        api.getMe()
+          .then((userData) => {
+            setUser(userData);
+          })
+          .catch(() => {
+            clearAuthToken();
+            setUser(null);
+          })
+          .finally(() => {
+            setIsLoading(false);
+          });
       })
       .catch(() => {
-        clearAuthToken();
-        setUser(null);
-      })
-      .finally(() => {
+        // Fallback
         setIsLoading(false);
       });
   }, []);
+
+  const setup = async (username: string, password: string, fullName?: string) => {
+    const res = await api.setupAdmin({ username, password, full_name: fullName });
+    setAuthToken(res.token);
+    setUser(res.user);
+    setIsInitialized(true);
+  };
 
   const login = async (username: string, password: string) => {
     const res = await api.login({ username, password });
@@ -60,6 +88,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         isAuthenticated: !!user,
         isLoading,
+        isInitialized,
+        setup,
         login,
         logout,
       }}

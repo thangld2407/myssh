@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Shield, Lock, ArrowRight, X, Server, Search, Heart, Sparkles } from 'lucide-react';
+import { Terminal, Shield, Lock, ArrowRight, X, Server, Search, Heart, Sparkles, Zap } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { Host } from './types';
 import { api } from './services/api';
@@ -15,6 +15,8 @@ import { SponsorModal } from './components/SponsorModal';
 import { CommandPalette } from './components/CommandPalette';
 import { RoadmapView } from './components/RoadmapView';
 import { ImportSshConfigModal } from './components/ImportSshConfigModal';
+import { SetupWizard } from './components/SetupWizard';
+import { MultiExecTerminal } from './components/MultiExecTerminal';
 
 interface OpenTerminalTab {
   id: string;
@@ -22,7 +24,7 @@ interface OpenTerminalTab {
 }
 
 export const App: React.FC = () => {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, isInitialized, login } = useAuth();
 
   // Navigation
   const [activeView, setActiveView] = useState<'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap'>('hosts');
@@ -37,12 +39,13 @@ export const App: React.FC = () => {
   const [showCredentialModal, setShowCredentialModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [sftpHost, setSftpHost] = useState<Host | null>(null);
+  const [multiExecHosts, setMultiExecHosts] = useState<Host[] | null>(null);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
 
   // Login form state
-  const [loginUser, setLoginUser] = useState('admin');
-  const [loginPass, setLoginPass] = useState('admin123');
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
 
@@ -116,11 +119,16 @@ export const App: React.FC = () => {
     );
   }
 
+  // First-Run Setup Wizard (If fresh install or no admin user)
+  if (!isInitialized) {
+    return <SetupWizard />;
+  }
+
   // Clean, Minimalist Enterprise Login Screen (Light Swiss / Stripe style)
   if (!isAuthenticated) {
     return (
       <div className="h-screen w-screen bg-[#F8FAFC] flex items-center justify-center p-4 select-none">
-        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-8 shadow-xl shadow-slate-200/60">
+        <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-sm p-8 shadow-xl shadow-slate-200/60 animate-modal">
           <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
             <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold shadow-sm">
               <Terminal className="w-5 h-5" />
@@ -145,8 +153,8 @@ export const App: React.FC = () => {
                 required
                 value={loginUser}
                 onChange={(e) => setLoginUser(e.target.value)}
-                placeholder="admin"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                placeholder="Tên tài khoản..."
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
               />
             </div>
 
@@ -158,14 +166,14 @@ export const App: React.FC = () => {
                 value={loginPass}
                 onChange={(e) => setLoginPass(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
               />
             </div>
 
             <button
               type="submit"
               disabled={loginSubmitting}
-              className="w-full py-2.5 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm hover:shadow disabled:opacity-50 mt-2"
+              className="w-full h-10 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm hover:shadow disabled:opacity-50 mt-2"
             >
               {loginSubmitting ? 'Đang xác thực...' : 'Đăng nhập'}
               <ArrowRight className="w-4 h-4" />
@@ -173,7 +181,7 @@ export const App: React.FC = () => {
           </form>
 
           <div className="mt-6 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
-            Tài khoản mặc định: <span className="text-slate-900 font-semibold font-mono">admin</span> / <span className="text-slate-900 font-semibold font-mono">admin123</span>
+            Hệ thống quản trị truy cập an toàn với mã hóa AES-256-GCM.
           </div>
         </div>
       </div>
@@ -217,6 +225,31 @@ export const App: React.FC = () => {
               Workspace
             </button>
 
+            {multiExecHosts && (
+              <div
+                onClick={() => setActiveTabId('multi-exec')}
+                className={`h-8 px-3 rounded-lg text-xs font-semibold flex items-center gap-2 transition cursor-pointer border active:scale-95 ${
+                  activeTabId === 'multi-exec'
+                    ? 'bg-amber-500 text-slate-950 font-bold border-amber-500 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <Zap className="w-3.5 h-3.5 fill-current text-slate-950" />
+                <span>Multi-Exec ({multiExecHosts.length})</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMultiExecHosts(null);
+                    if (activeTabId === 'multi-exec') setActiveTabId('dashboard');
+                  }}
+                  className="w-5 h-5 flex items-center justify-center rounded hover:bg-amber-600/30 text-slate-950 transition"
+                  title="Đóng Multi-Exec"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             {terminalTabs.map((tab) => (
               <div
                 key={tab.id}
@@ -247,7 +280,7 @@ export const App: React.FC = () => {
             ))}
           </div>
 
-          {/* Right quick tools: ⌘K, Sponsor */}
+          {/* Right quick tools: ⌘K Command Palette */}
           <div className="flex items-center space-x-2.5">
             <button
               onClick={() => setShowCommandPalette(true)}
@@ -255,15 +288,8 @@ export const App: React.FC = () => {
               title="Mở Command Palette (⌘K)"
             >
               <Search className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-500 font-sans hidden sm:inline">Tìm kiếm...</span>
               <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-semibold shadow-2xs">⌘K</kbd>
-            </button>
-
-            <button
-              onClick={() => setShowSponsorModal(true)}
-              className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 text-xs font-semibold transition border border-rose-200/80 shadow-2xs"
-            >
-              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
-              <span>Sponsor</span>
             </button>
           </div>
         </header>
@@ -278,6 +304,10 @@ export const App: React.FC = () => {
                 selectedFolder={selectedFolder}
                 onOpenTerminal={handleOpenTerminal}
                 onOpenSftp={(host) => setSftpHost(host)}
+                onOpenMultiExec={(selected) => {
+                  setMultiExecHosts(selected);
+                  setActiveTabId('multi-exec');
+                }}
                 onEditHost={(host) => {
                   setHostToEdit(host);
                   setShowHostModal(true);
@@ -323,6 +353,18 @@ export const App: React.FC = () => {
               />
             </div>
           ))}
+          {/* Multi-Exec Broadcast Terminal */}
+          {multiExecHosts && (
+            <div className={`h-full w-full ${activeTabId === 'multi-exec' ? 'block' : 'hidden'}`}>
+              <MultiExecTerminal
+                hosts={multiExecHosts}
+                onClose={() => {
+                  setMultiExecHosts(null);
+                  setActiveTabId('dashboard');
+                }}
+              />
+            </div>
+          )}
         </main>
       </div>
 

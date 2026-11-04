@@ -36,6 +36,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Public Auth routes
 	api := r.Group("/api")
 	{
+		api.GET("/auth/setup-status", authHandler.SetupStatus)
+		api.POST("/auth/setup", authHandler.Setup)
 		api.POST("/auth/login", authHandler.Login)
 	}
 

@@ -56,6 +56,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   // Auth
+  getSetupStatus: () => request<{ initialized: boolean }>('/auth/setup-status'),
+  setupAdmin: (data: { username: string; password: string; full_name?: string }) =>
+    request<{ token: string; user: User }>('/auth/setup', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   login: (data: { username: string; password: string }) =>
     request<{ token: string; user: User }>('/auth/login', {
       method: 'POST',

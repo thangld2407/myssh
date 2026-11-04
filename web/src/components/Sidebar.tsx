@@ -186,14 +186,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={onOpenSponsor}
-              className="w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-between text-rose-700 bg-rose-50 hover:bg-rose-100 transition-all duration-150 active:scale-[0.98] border border-rose-200/80 shadow-2xs"
+              className="w-full h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-between text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 transition-all duration-150 active:scale-[0.98] border border-slate-200 shadow-2xs"
             >
               <div className="flex items-center gap-2.5">
-                <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-                <span>Sponsor Dự án</span>
+                <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
+                <span>Ủng hộ dự án</span>
               </div>
-              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-white text-rose-700 border border-rose-200 font-semibold">
-                Donate
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white text-rose-600 font-semibold border border-rose-100 shadow-2xs">
+                Sponsor
               </span>
             </button>
           </div>

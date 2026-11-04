@@ -3,11 +3,8 @@ package db
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/glebarez/sqlite"
-	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -35,28 +32,11 @@ func Init(dbPath string) (*gorm.DB, error) {
 		return nil, fmt.Errorf("failed to auto-migrate: %w", err)
 	}
 
-	// Seed default admin if table is empty
+	// Check if admin user exists; if empty, system requires First-Run Setup Wizard via Web UI
 	var userCount int64
 	DB.Model(&User{}).Count(&userCount)
 	if userCount == 0 {
-		hash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, fmt.Errorf("failed to hash default admin password: %w", err)
-		}
-
-		admin := User{
-			ID:           uuid.New().String(),
-			Username:     "admin",
-			PasswordHash: string(hash),
-			FullName:     "Administrator",
-			Role:         "admin",
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
-		}
-		if err := DB.Create(&admin).Error; err != nil {
-			return nil, fmt.Errorf("failed to seed admin user: %w", err)
-		}
-		log.Println("[DB] Initialized with default admin account: admin / admin123")
+		log.Println("[DB] No users found. System is ready for First-Run Setup Wizard via Web UI.")
 	}
 
 	return DB, nil

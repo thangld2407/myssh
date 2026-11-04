@@ -1,65 +1,55 @@
-# MySSH - Web Bastion & Access Management Platform
+# MySSH - The Modern Web-Native Bastion & Terminal Platform
 
 [![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://golang.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)](https://react.dev)
 [![xterm.js](https://img.shields.io/badge/xterm.js-5.5-red?style=flat)](https://xtermjs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Security: AES-256-GCM](https://img.shields.io/badge/Vault-AES--256--GCM-green.svg)](#security--cryptography)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](Dockerfile)
 
-> Giải pháp Web-based SSH Jump Server & Bastion Host hiện đại, gọn nhẹ và bảo mật cao. Quản lý toàn bộ hạ tầng máy chủ và truy cập terminal an toàn trực tiếp trên trình duyệt web mà không cần cài đặt phần mềm client.
+> ⚡ **A lightweight, open-source, web-native alternative to MobaXterm and Termius.**  
+> Access SSH terminals, manage files with split-screen SFTP, broadcast commands across multiple servers, and audit sessions right from any modern web browser on Mac, Windows, Linux, and iPad.
+
+---
+
+## ⚔️ Bảng So Sánh Tính Năng (MySSH vs. The Giants)
+
+| Tính năng cốt lõi | **MySSH** | **MobaXterm** | **Termius** | **Apache Guacamole** |
+| :--- | :---: | :---: | :---: | :---: |
+| **Giá thành & Bản quyền** | **100% Free & Open-Source** | $69/user (Free bị giới hạn 12 sessions) | $12 - $20 / tháng | Free / Open-Source |
+| **Hỗ trợ Nền tảng** | **Mọi OS (Web-based: Mac, iPad, Linux, Windows)** | Chỉ Windows (Chạy Wine lỗi trên Mac) | Electron Desktop & Mobile | Web-based |
+| **Split-Screen Terminal + SFTP** | ✅ **Có sẵn (Song hành như MobaXterm)** | ✅ Có sẵn | ❌ Phải mở tab riêng | ❌ Không có SFTP tích hợp |
+| **Multi-Host Broadcast (Multi-Exec)** | ✅ **Có sẵn (Grid View gõ 1 lệnh chạy N máy)** | ✅ Có sẵn (Giao diện cũ) | ❌ Chỉ bản Enterprise đắt đỏ | ❌ Không có |
+| **1-Click Import ~/.ssh/config** | ✅ **Có sẵn (Live preview table)** | ⚠️ Nhập thủ công qua session file | ⚠️ Sync cloud có phí | ❌ Cấu hình qua XML/DB |
+| **Ghi hình & Replay phiên làm việc** | ✅ **Chuẩn Asciinema v2 (`.cast`)** | ❌ Chỉ log raw text file | ❌ Không hỗ trợ web player | ⚠️ Guac recording cần tool convert |
+| **Zero-Trust Key Vault** | ✅ **AES-256-GCM + Argon2id** | ⚠️ File cấu hình lưu plain/weak | ☁️ Cloud Sync (Rủi ro bên thứ ba) | ⚠️ Database Auth |
+| **Cài đặt & Vận hành** | **1-Liner script hoặc 1 Docker container** | File cài EXE Windows | Cài App trên từng máy tính | Cài đặt phức tạp (Guacd + Tomcat) |
 
 ---
 
 ## 🚀 Tính năng nổi bật (Key Features)
 
-- 💻 **Web Interactive Terminal:** Truy cập shell Linux/BSD mượt mà qua trình duyệt (`xterm.js` + WebSocket). Hỗ trợ đổi kích thước PTY linh hoạt, đa tab (Multi-tab) mở nhiều máy chủ đồng thời.
-- 🔐 **Zero-Trust Credential Vault:** Bảo vệ SSH Private Keys (RSA, Ed25519) và mật khẩu bằng thuật toán mã hóa **AES-256-GCM** với khóa dẫn xuất **Argon2id**. Kỹ sư truy cập không bao giờ nhìn thấy Private Key thô.
+- 💻 **Web Interactive Terminal:** Shell Linux/BSD thời gian thực mượt mà qua trình duyệt (`xterm.js` + WebSocket). Hỗ trợ đổi kích thước PTY linh hoạt, đa tab (Multi-tab) mở nhiều máy chủ đồng thời.
+- ⚡ **Multi-Host Broadcast Terminal (Multi-Exec):** Chọn hàng loạt máy chủ và gõ một câu lệnh để broadcast thực thi đồng thời trên tất cả các server, hiển thị kết quả trực quan dạng chia lưới (Grid View).
+- 📂 **Split-Screen SFTP Explorer:** Mở cây thư mục SFTP chạy song song bên cạnh Terminal trong cùng 1 tab như MobaXterm. Hỗ trợ kéo thả, upload, download, tạo thư mục và xóa tệp an toàn.
+- 🪄 **1-Click OpenSSH / MobaXterm Importer:** Kéo thả hoặc dán trực tiếp file `~/.ssh/config` để tự động bóc tách Host, Port, User, ProxyJump và nhập hàng loạt vào hệ thống.
+- 🔐 **Zero-Trust Credential Vault:** Bảo vệ SSH Private Keys (RSA, Ed25519) và mật khẩu bằng thuật toán mã hóa **AES-256-GCM** với khóa dẫn xuất **Argon2id**.
 - 🔑 **Ed25519 Key Generator:** Tự động sinh cặp khóa SSH Ed25519 một chạm trực tiếp trên giao diện và sao chép Public Key vào clipboard.
-- 🎥 **Session Audit & Replay:** Ghi hình toàn bộ dữ liệu I/O của phiên làm việc theo chuẩn **Asciinema v2 (`.cast`)** và cung cấp Web Player xem lại phiên với tốc độ 1x, 2x, 4x phục vụ kiểm toán an toàn thông tin.
-- 📁 **SFTP File Explorer:** Trình quản lý tệp tin đồ họa: duyệt thư mục từ xa, tải lên (upload), tải xuống (download), tạo thư mục và xóa tệp.
-- 🔀 **SSH Port Forwarding & Tunnels:** Thiết lập và quản lý Local Port Forwarding và Dynamic SOCKS5 Proxy qua kết nối SSH.
-- 🦘 **Jump Host Support:** Kết nối xuyên qua Bastion / Jump Server trung gian (ProxyJump) tới các máy chủ nằm sâu trong Private Subnet.
-- 📦 **Single Binary Deployment:** Biên dịch 1 file nhị phân duy nhất nhúng sẵn toàn bộ Web UI, sử dụng SQLite Pure Go không cần cài đặt CGO/GCC.
+- 🎥 **Session Audit & Web Player:** Ghi hình toàn bộ I/O phiên làm việc theo chuẩn **Asciinema v2 (`.cast`)** và cung cấp Web Player xem lại với tốc độ 1x, 2x, 4x phục vụ kiểm toán an toàn thông tin.
+- 🔀 **SSH Port Forwarding & Tunnels:** Thiết lập và quản lý Local Port Forwarding và Dynamic SOCKS5 Proxy trực quan.
+- 🛡️ **First-Run Setup Wizard:** Không chứa mật khẩu mặc định hardcoded! Khi khởi chạy lần đầu, wizard bảo mật yêu cầu người dùng tự đặt mật khẩu quản trị mạnh và tích hợp bộ đếm giới hạn tần suất (Rate Limiting) chống Brute-force.
 
 ---
 
-## 🏛️ Sơ đồ kiến trúc (System Architecture)
+## ⚡ Cài đặt nhanh trong 1 dòng lệnh (1-Liner Quick Install)
 
-```mermaid
-flowchart TD
-    User["Kỹ sư DevOps / Admin\n(Trình duyệt Web)"]
-    
-    subgraph MySSH["MySSH Platform (Go + React SPA)"]
-        Router["HTTP / WebSocket Router"]
-        AuthMid["JWT Auth & CORS"]
-        Vault["Credential Vault (AES-256-GCM)"]
-        Hub["SSH Hub Engine (golang.org/x/crypto/ssh)"]
-        Recorder["Asciinema Recorder (.cast)"]
-        SFTP["SFTP Bridge (pkg/sftp)"]
-        Tunnels["TCP Proxy & SOCKS5"]
-        DB[("SQLite (myssh.db)")]
-    end
+### Cách 1: Chạy trực tiếp lệnh Curl Installer (Linux / macOS VPS)
 
-    Target["Target Servers (Port 22)"]
-    Jump["Jump Host (Bastion)"]
-
-    User -->|HTTPS / WSS| Router
-    Router --> AuthMid
-    AuthMid --> Hub
-    Hub --> Vault
-    Hub --> Recorder
-    Hub --> SFTP
-    Hub --> Tunnels
-    Hub --> DB
-    Hub -->|SSH v2| Target
-    Hub -->|ProxyJump| Jump --> Target
+```bash
+curl -fsSL https://raw.githubusercontent.com/myssh/myssh/main/scripts/install.sh | bash
 ```
 
----
-
-## ⚡ Khởi chạy nhanh (Quick Start)
-
-### 1. Sử dụng Docker Compose (Khuyến nghị)
+### Cách 2: Sử dụng Docker Compose
 
 ```bash
 # Clone dự án
@@ -71,31 +61,21 @@ docker compose up -d
 ```
 Truy cập giao diện tại: **`http://localhost:8080`**
 
-### 2. Biên dịch và chạy từ mã nguồn (Native Binary)
-
-**Yêu cầu:** Go 1.22+ và Node.js 20+
+### Cách 3: Docker Compose kèm Tự Động Cấp SSL HTTPS (Caddy)
 
 ```bash
-# 1. Cài đặt và build frontend
-cd web && pnpm install && pnpm build && cd ..
-
-# 2. Biên dịch Go binary
-go build -ldflags="-s -w" -o bin/myssh ./cmd/server
-
-# 3. Khởi chạy server
-./bin/myssh
+DOMAIN=bastion.yourdomain.com docker compose -f docker-compose.production.yml up -d
 ```
+Caddy sẽ tự động đăng ký chứng chỉ SSL Let's Encrypt và kích hoạt HTTPS cho domain của bạn.
 
 ---
 
-## 🔑 Tài khoản mặc định (Default Credentials)
+## 🛡️ Khởi Tạo Lần Đầu (First-Run Setup)
 
-Hệ thống tự động khởi tạo tài khoản quản trị viên trong lần khởi chạy đầu tiên:
-
-- **Tên đăng nhập:** `admin`
-- **Mật khẩu:** `admin123`
-
-> ⚠️ **Lưu ý bảo mật:** Hãy đổi mật khẩu ngay sau khi đăng nhập vào hệ thống lần đầu!
+Trong lần khởi chạy đầu tiên, MySSH sẽ hiển thị **First-Run Setup Wizard**:
+1. Đặt họ tên và tên đăng nhập Quản trị viên (Master Admin).
+2. Nhập mật khẩu mạnh (tối thiểu 8 ký tự với thanh đo độ an toàn thời gian thực).
+3. Hệ thống sẽ tự động kích hoạt mã hóa AES-256-GCM và chuyển bạn vào màn hình điều khiển.
 
 ---
 
@@ -123,16 +103,14 @@ go test -v ./...
 
 ---
 
-## 👥 Đội ngũ SDLC Agents & Tài liệu thiết kế
+## ❤️ Sponsor & Build in Public
 
-Dự án này được thiết kế và triển khai hoàn thiện theo quy trình **SDLC Framework**:
+MySSH là dự án nguồn mở 100% miễn phí được phát triển công khai (Build in Public). Nếu MySSH giúp bạn tiết kiệm được tiền mua bản quyền MobaXterm ($69) hay Termius ($15/tháng), hãy cân nhắc ủng hộ dự án để duy trì hạ tầng:
 
-1. **Requirements & Scope:** [`docs/PRD.md`](file:///Users/thangle/Desktop/Workspace/Coding/MySSH/docs/PRD.md) bởi `sdlc-product-analyst`
-2. **Architecture & C4 Specs:** [`docs/ARCHITECTURE.md`](file:///Users/thangle/Desktop/Workspace/Coding/MySSH/docs/ARCHITECTURE.md) bởi `sdlc-system-architect`
-3. **Core Implementation:** Mã nguồn Clean Go & React SPA bởi `sdlc-software-engineer`
-4. **Test & QA Strategy:** Bộ Unit Tests `*_test.go` bởi `sdlc-qa-engineer`
-5. **Security Review & OWASP Audit:** [`docs/SECURITY_AUDIT.md`](file:///Users/thangle/Desktop/Workspace/Coding/MySSH/docs/SECURITY_AUDIT.md) bởi `sdlc-security-auditor`
-6. **DevOps & Packaging:** `Dockerfile`, `docker-compose.yml`, `Makefile`, `.github/workflows/ci.yml` bởi `sdlc-devops-sre`
+- ☕ **Buy Me a Coffee:** [buymeacoffee.com](https://buymeacoffee.com)
+- 💖 **GitHub Sponsors:** [github.com/sponsors](https://github.com/sponsors)
+- 🏦 **VietQR / MoMo:** Quét mã QR trực tiếp trong mục **Sponsor** trên thanh công cụ của ứng dụng.
+- 🪙 **Crypto (ETH / USDT):** `0x71C000000000000000000000000000000004f3B9`
 
 ---
 
