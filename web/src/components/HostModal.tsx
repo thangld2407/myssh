@@ -77,118 +77,118 @@ export const HostModal: React.FC<HostModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-      <div className="bg-white border border-slate-200 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-slate-800">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop">
+      <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-modal">
         {/* Header */}
-        <div className="h-12 border-b border-slate-200 px-5 flex items-center justify-between bg-slate-50/75">
+        <div className="h-14 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75">
           <div className="flex items-center space-x-2.5">
             <Server className="w-4 h-4 text-slate-700" />
-            <h2 className="font-semibold text-slate-900 text-xs">
+            <h2 className="font-semibold text-slate-900 text-sm">
               {hostToEdit ? 'Chỉnh sửa máy chủ' : 'Thêm máy chủ mới'}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition active:scale-90"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
-          <div className="grid grid-cols-2 gap-3">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tên máy chủ</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tên máy chủ</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="vd: Prod-Web-01"
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Thư mục / Môi trường</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Thư mục / Môi trường</label>
               <input
                 type="text"
                 value={folder}
                 onChange={(e) => setFolder(e.target.value)}
                 placeholder="Production, Staging..."
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-3.5">
             <div className="col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Địa chỉ IP / Hostname</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Địa chỉ IP / Hostname</label>
               <input
                 type="text"
                 required
                 value={hostname}
                 onChange={(e) => setHostname(e.target.value)}
                 placeholder="192.168.1.10 hoặc domain.com"
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Cổng Port</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Cổng Port</label>
               <input
                 type="number"
                 required
                 value={port}
                 onChange={(e) => setPort(Number(e.target.value))}
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">User SSH</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">User SSH</label>
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="root, ubuntu..."
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tags (cách nhau bởi dấu phẩy)</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tags (cách nhau dấu phẩy)</label>
               <input
                 type="text"
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="web, db, aws"
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
               />
             </div>
           </div>
 
           {/* Credential */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-semibold text-slate-700">Khóa xác thực (Credential / Key)</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-slate-700">Khóa xác thực (Credential / Key)</label>
               <button
                 type="button"
                 onClick={onOpenCredentialModal}
-                className="text-slate-500 hover:text-slate-900 text-[10px] flex items-center gap-1 font-medium transition"
+                className="text-slate-500 hover:text-slate-900 text-xs flex items-center gap-1 font-medium transition active:scale-95"
               >
-                <PlusCircle className="w-3 h-3 text-slate-400" /> Quản lý Key Vault
+                <PlusCircle className="w-3.5 h-3.5 text-slate-400" /> Quản lý Key Vault
               </button>
             </div>
             <select
               required
               value={credentialId}
               onChange={(e) => setCredentialId(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
             >
               <option value="" disabled>-- Chọn Credential --</option>
               {credentials.map((c) => (
@@ -201,13 +201,13 @@ export const HostModal: React.FC<HostModalProps> = ({
 
           {/* Jump Host */}
           <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Jump Host / Bastion trung gian (Tùy chọn)
             </label>
             <select
               value={jumpHostId}
               onChange={(e) => setJumpHostId(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
             >
               <option value="">Không sử dụng (Kết nối trực tiếp)</option>
               {existingHosts
@@ -221,29 +221,29 @@ export const HostModal: React.FC<HostModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-700 mb-1">Ghi chú</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Ghi chú</label>
             <textarea
               rows={2}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ghi chú thêm..."
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
             />
           </div>
 
           {/* Action buttons */}
-          <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+          <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+              className="h-9 px-4 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition active:scale-95"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-4 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-semibold disabled:opacity-50 transition shadow-2xs"
+              className="h-9 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 active:bg-slate-950 active:scale-95 text-white text-xs font-semibold disabled:opacity-50 transition shadow-xs"
             >
               {submitting ? 'Đang lưu...' : (hostToEdit ? 'Cập nhật' : 'Thêm Máy Chủ')}
             </button>

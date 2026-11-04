@@ -37,33 +37,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const folders = Array.from(new Set(hosts.map((h) => h.folder || 'General')));
 
   return (
-    <aside className="w-60 bg-white border-r border-slate-200 flex flex-col justify-between select-none shrink-0 h-full">
+    <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between select-none shrink-0 h-full">
       <div className="flex flex-col">
         {/* Workspace Brand */}
-        <div className="h-12 px-4 border-b border-slate-200 flex items-center justify-between">
+        <div className="h-14 px-4 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
-            <div className="w-6 h-6 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-              <Terminal className="w-3.5 h-3.5" />
+            <div className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+              <Terminal className="w-4 h-4" />
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-900 text-xs tracking-tight">
+              <span className="font-semibold text-slate-900 text-sm tracking-tight">
                 MySSH
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">v1.1</span>
+              <span className="text-xs text-slate-400 font-mono">v1.1</span>
             </div>
           </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-50" title="Gateway Online" />
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-50" title="Gateway Online" />
         </div>
 
         {/* Navigation Sections */}
-        <div className="p-2.5 space-y-5 overflow-y-auto">
+        <div className="p-3 space-y-5 overflow-y-auto">
           {/* Main Items */}
           <div className="space-y-1">
             <button
               onClick={() => onSelectView('hosts')}
-              className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition ${
+              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-between transition-all duration-150 active:scale-[0.98] ${
                 activeView === 'hosts'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -71,16 +71,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Server className={`w-4 h-4 ${activeView === 'hosts' ? 'text-slate-900' : 'text-slate-500'}`} />
                 <span>Máy chủ (Hosts)</span>
               </div>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-200/60 text-slate-700 font-medium">
+              <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-200/60 text-slate-700 font-semibold">
                 {hosts.length}
               </span>
             </button>
 
             <button
               onClick={() => onSelectView('credentials')}
-              className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2.5 transition ${
+              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
                 activeView === 'credentials'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -90,9 +90,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => onSelectView('tunnels')}
-              className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2.5 transition ${
+              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
                 activeView === 'tunnels'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -102,9 +102,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={() => onSelectView('audit')}
-              className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2.5 transition ${
+              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
                 activeView === 'audit'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -115,14 +115,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* Folder Hierarchy */}
           <div className="space-y-1">
-            <div className="px-2 pb-1 flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <div className="px-2.5 pb-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
               <span>Môi trường</span>
               <button
                 onClick={onAddHost}
-                className="hover:text-slate-900 p-0.5 text-slate-400 transition"
+                className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all duration-150 active:scale-90"
                 title="Thêm máy chủ mới"
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -131,17 +131,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onSelectView('hosts');
                 onSelectFolder('All');
               }}
-              className={`w-full px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between transition ${
+              className={`w-full h-8 px-3 rounded-lg text-xs flex items-center justify-between transition-all duration-150 active:scale-[0.98] ${
                 activeView === 'hosts' && selectedFolder === 'All'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/80 shadow-2xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
               }`}
             >
-              <span className="flex items-center gap-2">
-                <Folder className="w-3.5 h-3.5 text-slate-500" />
+              <span className="flex items-center gap-2.5">
+                <Folder className="w-4 h-4 text-slate-500" />
                 Tất cả
               </span>
-              <span className="text-[10px] font-mono text-slate-500">{hosts.length}</span>
+              <span className="text-xs font-mono text-slate-500">{hosts.length}</span>
             </button>
 
             {folders.map((f) => {
@@ -154,29 +154,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onSelectView('hosts');
                     onSelectFolder(f);
                   }}
-                  className={`w-full px-2.5 py-1.5 rounded-md text-xs flex items-center justify-between transition ${
+                  className={`w-full h-8 px-3 rounded-lg text-xs flex items-center justify-between transition-all duration-150 active:scale-[0.98] ${
                     isSelected
-                      ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                      ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/80 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium'
                   }`}
                 >
-                  <span className="truncate flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                  <span className="truncate flex items-center gap-2.5">
+                    <span className="w-2 h-2 rounded-full bg-slate-400" />
                     {f}
                   </span>
-                  <span className="text-[10px] font-mono text-slate-500">{count}</span>
+                  <span className="text-xs font-mono text-slate-500">{count}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Community */}
-          <div className="space-y-1.5 pt-3 border-t border-slate-200">
+          <div className="space-y-1.5 pt-3.5 border-t border-slate-200">
             <button
               onClick={() => onSelectView('roadmap')}
-              className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center gap-2.5 transition ${
+              className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
                 activeView === 'roadmap'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/60 shadow-2xs'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -186,13 +186,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             <button
               onClick={onOpenSponsor}
-              className="w-full px-2.5 py-1.5 rounded-md text-xs font-medium flex items-center justify-between text-rose-700 bg-rose-50 hover:bg-rose-100 transition border border-rose-200/80 shadow-2xs"
+              className="w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center justify-between text-rose-700 bg-rose-50 hover:bg-rose-100 transition-all duration-150 active:scale-[0.98] border border-rose-200/80 shadow-2xs"
             >
-              <div className="flex items-center gap-2">
-                <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+              <div className="flex items-center gap-2.5">
+                <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
                 <span>Sponsor Dự án</span>
               </div>
-              <span className="text-[9px] font-mono px-1 rounded bg-white text-rose-700 border border-rose-200 font-semibold">
+              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-white text-rose-700 border border-rose-200 font-semibold">
                 Donate
               </span>
             </button>
@@ -201,24 +201,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Bottom Profile */}
-      <div className="p-3 border-t border-slate-200 bg-white">
+      <div className="p-3.5 border-t border-slate-200 bg-white">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2.5 truncate">
-            <div className="w-7 h-7 rounded bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 font-semibold text-xs">
+          <div className="flex items-center space-x-3 truncate">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-800 font-bold text-xs shadow-2xs">
               {user?.username.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col text-left truncate">
               <span className="font-semibold text-slate-900 text-xs truncate">{user?.username}</span>
-              <span className="text-[10px] text-slate-500 font-mono capitalize">{user?.role}</span>
+              <span className="text-xs text-slate-500 font-mono capitalize">{user?.role}</span>
             </div>
           </div>
 
           <button
             onClick={logout}
             title="Đăng xuất"
-            className="p-1.5 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all duration-150 active:scale-90"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>

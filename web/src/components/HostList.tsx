@@ -97,65 +97,65 @@ export const HostList: React.FC<HostListProps> = ({
   return (
     <div className="flex flex-col h-full bg-[#F8FAFC] text-slate-800">
       {/* Top Application Toolbar */}
-      <div className="h-13 px-6 border-b border-slate-200 flex items-center justify-between bg-white shrink-0 shadow-2xs">
+      <div className="h-14 px-6 border-b border-slate-200 flex items-center justify-between bg-white shrink-0 shadow-2xs">
         <div className="flex items-center space-x-2 text-xs text-slate-500">
           <span>Máy chủ</span>
           <span className="text-slate-300">/</span>
           <span className="text-slate-900 font-semibold">{selectedFolder}</span>
-          <span className="text-slate-400 font-mono text-[11px]">({filteredHosts.length})</span>
+          <span className="text-slate-400 font-mono text-xs">({filteredHosts.length})</span>
         </div>
 
         {/* Search, View Mode & Action */}
-        <div className="flex items-center space-x-2.5">
-          <div className="relative w-64">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+        <div className="flex items-center space-x-3">
+          <div className="relative w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm theo tên, IP, user..."
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+              className="w-full h-9 pl-9 pr-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all duration-150"
             />
           </div>
 
           {/* Toggle View Mode */}
-          <div className="flex items-center bg-slate-50 rounded-md border border-slate-200 p-0.5">
+          <div className="flex items-center bg-slate-50 rounded-lg border border-slate-200 p-0.5">
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1 rounded transition ${
-                viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs border border-slate-200' : 'text-slate-400 hover:text-slate-700'
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 ${
+                viewMode === 'table' ? 'bg-white text-slate-900 shadow-2xs border border-slate-200 font-semibold' : 'text-slate-400 hover:text-slate-700'
               }`}
               title="Chế độ Bảng"
             >
-              <LayoutList className="w-3.5 h-3.5" />
+              <LayoutList className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1 rounded transition ${
-                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs border border-slate-200' : 'text-slate-400 hover:text-slate-700'
+              className={`w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150 active:scale-95 ${
+                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-2xs border border-slate-200 font-semibold' : 'text-slate-400 hover:text-slate-700'
               }`}
               title="Chế độ Lưới"
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
+              <LayoutGrid className="w-4 h-4" />
             </button>
           </div>
 
           {/* Import SSH Config Button */}
           <button
             onClick={onImportSSHConfig}
-            className="px-3 py-1.5 rounded-md bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition border border-slate-200 shadow-2xs"
+            className="h-9 px-3.5 rounded-lg bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-2 transition-all duration-150 border border-slate-200 shadow-2xs"
             title="Nhập máy chủ từ file ~/.ssh/config"
           >
-            <FileUp className="w-3.5 h-3.5 text-slate-500" />
+            <FileUp className="w-4 h-4 text-slate-500" />
             Import Config
           </button>
 
           {/* Primary Action Button: Modern Solid Black */}
           <button
             onClick={onAddHost}
-            className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 active:bg-slate-950 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+            className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 active:bg-slate-950 text-white text-xs font-semibold flex items-center gap-2 transition-all duration-150 shadow-2xs"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             Thêm Máy Chủ
           </button>
         </div>
@@ -167,14 +167,14 @@ export const HostList: React.FC<HostListProps> = ({
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-slate-500 font-semibold text-[11px] uppercase tracking-wider">
-                  <th className="py-2.5 px-4 w-12 text-center">Status</th>
-                  <th className="py-2.5 px-4">Tên Máy Chủ</th>
-                  <th className="py-2.5 px-4">Địa Chỉ IP / Host</th>
-                  <th className="py-2.5 px-4 w-28">User</th>
-                  <th className="py-2.5 px-4 w-40">Khóa Xác Thực</th>
-                  <th className="py-2.5 px-4 w-28">Thư Mục</th>
-                  <th className="py-2.5 px-4 text-right pr-4 w-44">Thao Tác</th>
+                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-500 font-semibold text-xs uppercase tracking-wider">
+                  <th className="py-3 px-4 w-14 text-center">Status</th>
+                  <th className="py-3 px-4">Tên Máy Chủ</th>
+                  <th className="py-3 px-4">Địa Chỉ IP / Host</th>
+                  <th className="py-3 px-4 w-32">User</th>
+                  <th className="py-3 px-4 w-44">Khóa Xác Thực</th>
+                  <th className="py-3 px-4 w-32">Thư Mục</th>
+                  <th className="py-3 px-4 text-right pr-5 w-52">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono">
@@ -186,10 +186,10 @@ export const HostList: React.FC<HostListProps> = ({
                     <tr
                       key={host.id}
                       onDoubleClick={() => onOpenTerminal(host)}
-                      className="hover:bg-slate-50/80 group transition cursor-pointer select-none"
+                      className="hover:bg-slate-50/80 group transition-colors duration-150 cursor-pointer select-none"
                     >
                       {/* Status */}
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center">
                           {result ? (
                             result.success ? (
@@ -204,79 +204,79 @@ export const HostList: React.FC<HostListProps> = ({
                       </td>
 
                       {/* Server Name */}
-                      <td className="py-3 px-4 font-sans">
+                      <td className="py-3.5 px-4 font-sans">
                         <div className="flex items-center space-x-2">
-                          <span className="font-semibold text-slate-900 group-hover:text-black transition-colors">
+                          <span className="font-semibold text-slate-900 group-hover:text-black transition-colors text-xs">
                             {host.name}
                           </span>
                           {host.jump_host_id && (
-                            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                               JumpHost
                             </span>
                           )}
                         </div>
                         {host.description && (
-                          <p className="text-[11px] text-slate-500 font-sans truncate max-w-xs mt-0.5">
+                          <p className="text-xs text-slate-500 font-sans truncate max-w-xs mt-0.5">
                             {host.description}
                           </p>
                         )}
                       </td>
 
                       {/* Hostname:Port & Copy */}
-                      <td className="py-3 px-4 text-slate-700">
-                        <div className="flex items-center space-x-1.5">
+                      <td className="py-3.5 px-4 text-slate-700 text-xs">
+                        <div className="flex items-center space-x-2">
                           <span>{host.hostname}:{host.port}</span>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleCopyHost(host);
                             }}
-                            className="p-1 text-slate-400 hover:text-slate-700 transition"
+                            className="p-1 rounded hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-all duration-150 active:scale-90"
                             title="Copy lệnh SSH"
                           >
                             {copiedId === host.id ? (
-                              <Check className="w-3 h-3 text-emerald-600" />
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
                             ) : (
-                              <Copy className="w-3 h-3" />
+                              <Copy className="w-3.5 h-3.5" />
                             )}
                           </button>
                         </div>
                       </td>
 
                       {/* User */}
-                      <td className="py-3 px-4 text-slate-600 font-medium">{host.username}</td>
+                      <td className="py-3.5 px-4 text-slate-600 font-medium text-xs">{host.username}</td>
 
                       {/* Credential */}
-                      <td className="py-3 px-4 font-sans">
+                      <td className="py-3.5 px-4 font-sans text-xs">
                         {host.credential ? (
-                          <span className="text-[11px] text-slate-600 flex items-center gap-1.5 truncate max-w-[150px]">
-                            <KeyRound className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span className="text-slate-600 flex items-center gap-1.5 truncate max-w-[160px]">
+                            <KeyRound className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                             <span className="truncate">{host.credential.name}</span>
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-[11px]">Chưa gắn key</span>
+                          <span className="text-slate-400 text-xs">Chưa gắn key</span>
                         )}
                       </td>
 
                       {/* Folder */}
-                      <td className="py-3 px-4 font-sans">
-                        <span className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 font-medium">
+                      <td className="py-3.5 px-4 font-sans">
+                        <span className="text-xs px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80 font-medium">
                           {host.folder || 'General'}
                         </span>
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-right pr-4 font-sans">
-                        <div className="flex items-center justify-end space-x-1.5">
+                      <td className="py-3.5 px-4 text-right pr-5 font-sans">
+                        <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               onOpenTerminal(host);
                             }}
-                            className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold flex items-center gap-1 transition shadow-2xs"
+                            className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 shadow-2xs"
                             title="Mở Web Terminal"
                           >
-                            <Terminal className="w-3 h-3 text-emerald-400" />
+                            <Terminal className="w-3.5 h-3.5 text-emerald-400" />
                             Kết nối
                           </button>
 
@@ -285,19 +285,19 @@ export const HostList: React.FC<HostListProps> = ({
                               e.stopPropagation();
                               onOpenSftp(host);
                             }}
-                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-all duration-150 active:scale-95 border border-transparent hover:border-slate-200"
                             title="Quản lý SFTP"
                           >
-                            <HardDrive className="w-3.5 h-3.5" />
+                            <HardDrive className="w-4 h-4" />
                           </button>
 
                           <button
                             onClick={(e) => handleTestConnection(host, e)}
                             disabled={isTesting}
-                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-all duration-150 active:scale-95 border border-transparent hover:border-slate-200"
                             title="Kiểm tra ping SSH"
                           >
-                            <Radio className={`w-3.5 h-3.5 ${isTesting ? 'animate-pulse text-slate-900' : ''}`} />
+                            <Radio className={`w-4 h-4 ${isTesting ? 'animate-pulse text-slate-900' : ''}`} />
                           </button>
 
                           <button
@@ -305,18 +305,18 @@ export const HostList: React.FC<HostListProps> = ({
                               e.stopPropagation();
                               onEditHost(host);
                             }}
-                            className="p-1.5 rounded-md hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-all duration-150 active:scale-95 border border-transparent hover:border-slate-200"
                             title="Sửa máy chủ"
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            <Edit2 className="w-4 h-4" />
                           </button>
 
                           <button
                             onClick={(e) => handleDeleteHost(host, e)}
-                            className="p-1.5 rounded-md hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-slate-400 hover:text-red-600 transition-all duration-150 active:scale-95 border border-transparent hover:border-red-200"
                             title="Xóa máy chủ"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -326,8 +326,8 @@ export const HostList: React.FC<HostListProps> = ({
 
                 {filteredHosts.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-400 font-sans">
-                      Không có máy chủ nào trong thư mục này. Bấm "Thêm Máy Chủ" để cấu hình kết nối.
+                    <td colSpan={7} className="py-16 text-center text-slate-400 font-sans text-xs">
+                      Không có máy chủ nào trong thư mục này. Bấm "Thêm Máy Chủ" hoặc "Import Config" để bắt đầu.
                     </td>
                   </tr>
                 )}
@@ -336,69 +336,69 @@ export const HostList: React.FC<HostListProps> = ({
           </div>
         ) : (
           /* Grid View: Clean Minimalist Light Cards */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredHosts.map((host) => (
               <div
                 key={host.id}
                 onDoubleClick={() => onOpenTerminal(host)}
-                className="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm rounded-xl p-4 flex flex-col justify-between transition cursor-pointer select-none group"
+                className="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md rounded-xl p-5 flex flex-col justify-between transition-all duration-200 cursor-pointer select-none group"
               >
                 <div>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
-                        <Server className="w-4 h-4" />
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-200">
+                        <Server className="w-5 h-5" />
                       </div>
                       <div>
                         <h3 className="font-semibold text-slate-900 text-xs group-hover:text-black transition-colors">
                           {host.name}
                         </h3>
-                        <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                        <p className="text-xs font-mono text-slate-500 mt-0.5">
                           {host.username}@{host.hostname}:{host.port}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-1.5">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           onEditHost(host);
                         }}
-                        className="p-1 rounded text-slate-400 hover:text-slate-700 transition"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150 active:scale-90"
                       >
-                        <Edit2 className="w-3 h-3" />
+                        <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={(e) => handleDeleteHost(host, e)}
-                        className="p-1 rounded text-slate-400 hover:text-red-600 transition"
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all duration-150 active:scale-90"
                       >
-                        <Trash2 className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 mt-3 text-[10px]">
-                    <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
+                  <div className="flex items-center gap-2 mt-4 text-xs">
+                    <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 font-medium">
                       {host.folder || 'General'}
                     </span>
                     {host.credential && (
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[120px] font-medium">
+                      <span className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200 truncate max-w-[140px] font-medium">
                         {host.credential.name}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100">
+                <div className="grid grid-cols-2 gap-2.5 mt-5 pt-3.5 border-t border-slate-100">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onOpenTerminal(host);
                     }}
-                    className="py-1.5 px-3 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-2xs"
+                    className="h-9 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-150 shadow-2xs"
                   >
-                    <Terminal className="w-3.5 h-3.5 text-emerald-400" />
+                    <Terminal className="w-4 h-4 text-emerald-400" />
                     Terminal
                   </button>
 
@@ -407,9 +407,9 @@ export const HostList: React.FC<HostListProps> = ({
                       e.stopPropagation();
                       onOpenSftp(host);
                     }}
-                    className="py-1.5 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition border border-slate-200"
+                    className="h-9 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-all duration-150 border border-slate-200"
                   >
-                    <HardDrive className="w-3.5 h-3.5" />
+                    <HardDrive className="w-4 h-4" />
                     SFTP
                   </button>
                 </div>

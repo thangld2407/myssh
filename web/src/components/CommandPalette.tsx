@@ -132,15 +132,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-900/40 backdrop-blur-xs p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop"
       onClick={onClose}
     >
       <div
-        className="bg-white border border-slate-200 rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-slate-800"
+        className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-modal"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="h-12 border-b border-slate-200 px-4 flex items-center space-x-3 bg-slate-50/75">
+        <div className="h-13 border-b border-slate-200 px-4.5 flex items-center space-x-3 bg-slate-50/75">
           <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
@@ -153,29 +153,29 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
             placeholder="Tìm máy chủ hoặc thao tác..."
             className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
           />
-          <kbd className="px-1.5 py-0.2 rounded bg-white text-[10px] font-mono text-slate-500 border border-slate-200 font-semibold shadow-2xs">
+          <kbd className="px-1.5 py-0.5 rounded-md bg-white text-[10px] font-mono text-slate-500 border border-slate-200 font-semibold shadow-2xs">
             ESC
           </kbd>
         </div>
 
-        <div className="max-h-80 overflow-y-auto p-1.5 space-y-0.5 bg-white">
+        <div className="max-h-80 overflow-y-auto p-2 space-y-1 bg-white">
           {filtered.map((item, index) => (
             <div
               key={item.id}
               onClick={() => item.run()}
               onMouseEnter={() => setSelectedIndex(index)}
-              className={`px-3 py-2.5 rounded-lg flex items-center justify-between cursor-pointer transition text-xs ${
+              className={`min-h-[42px] px-3.5 py-2.5 rounded-xl flex items-center justify-between cursor-pointer transition text-xs active:scale-[0.99] ${
                 selectedIndex === index
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/80 shadow-2xs'
+                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-2xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <div className="flex items-center space-x-2.5">
+              <div className="flex items-center space-x-3">
                 {item.icon}
                 <span>{item.title}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200/60 font-medium">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                   {item.category}
                 </span>
                 {selectedIndex === index && (
@@ -192,7 +192,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           )}
         </div>
 
-        <div className="h-8 border-t border-slate-200 px-4 bg-slate-50/75 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+        <div className="h-9 border-t border-slate-200 px-4 bg-slate-50/75 flex items-center justify-between text-[10px] text-slate-500 font-mono">
           <div className="flex items-center space-x-3">
             <span>↑↓ di chuyển</span>
             <span>↵ chọn</span>

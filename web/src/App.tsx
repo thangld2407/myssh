@@ -202,14 +202,14 @@ export const App: React.FC = () => {
       {/* 2. Right Main Application Body */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header / Multi-Tabs Bar */}
-        <header className="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+        <header className="h-14 bg-white border-b border-slate-200 px-5 flex items-center justify-between select-none shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
           {/* Tabs for Dashboard and Active Terminals */}
-          <div className="flex items-center space-x-1.5 overflow-x-auto">
+          <div className="flex items-center space-x-2 overflow-x-auto">
             <button
               onClick={() => setActiveTabId('dashboard')}
-              className={`h-7 px-3 rounded-md text-xs font-medium flex items-center gap-1.5 transition ${
+              className={`h-8 px-3.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition active:scale-95 ${
                 activeTabId === 'dashboard'
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200/80 shadow-xs'
+                  ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
@@ -221,48 +221,48 @@ export const App: React.FC = () => {
               <div
                 key={tab.id}
                 onClick={() => setActiveTabId(tab.id)}
-                className={`h-7 px-2.5 rounded-md text-xs font-mono flex items-center gap-2 transition cursor-pointer border ${
+                className={`h-8 px-3 rounded-lg text-xs font-mono flex items-center gap-2 transition cursor-pointer border active:scale-95 ${
                   activeTabId === tab.id
-                    ? 'bg-slate-900 text-white font-medium border-slate-900 shadow-xs'
+                    ? 'bg-slate-900 text-white font-semibold border-slate-900 shadow-xs'
                     : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
-                <Terminal className="w-3 h-3 text-emerald-500" />
-                <span className="truncate max-w-[140px]">{tab.host.name}</span>
+                <Terminal className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="truncate max-w-[150px]">{tab.host.name}</span>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleCloseTerminal(tab.id);
                   }}
-                  className={`p-0.5 rounded transition ${
+                  className={`w-5 h-5 flex items-center justify-center rounded transition active:scale-90 ${
                     activeTabId === tab.id
                       ? 'hover:bg-slate-700 text-slate-300 hover:text-white'
                       : 'hover:bg-slate-200 text-slate-400 hover:text-slate-800'
                   }`}
                   title="Đóng terminal"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             ))}
           </div>
 
           {/* Right quick tools: ⌘K, Sponsor */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2.5">
             <button
               onClick={() => setShowCommandPalette(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-50 hover:bg-slate-100 text-[11px] text-slate-600 hover:text-slate-900 transition border border-slate-200 shadow-2xs"
+              className="flex items-center gap-2 h-8 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 active:scale-95 text-xs text-slate-600 hover:text-slate-900 transition border border-slate-200 shadow-2xs font-medium"
               title="Mở Command Palette (⌘K)"
             >
-              <Search className="w-3 h-3 text-slate-400" />
-              <kbd className="text-[10px] font-mono px-1 py-0.2 rounded bg-white border border-slate-200 text-slate-500 font-semibold">⌘K</kbd>
+              <Search className="w-3.5 h-3.5 text-slate-400" />
+              <kbd className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-semibold shadow-2xs">⌘K</kbd>
             </button>
 
             <button
               onClick={() => setShowSponsorModal(true)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-medium transition border border-rose-200/80 shadow-2xs"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-700 text-xs font-semibold transition border border-rose-200/80 shadow-2xs"
             >
-              <Heart className="w-3 h-3 fill-rose-500 text-rose-500" />
+              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
               <span>Sponsor</span>
             </button>
           </div>

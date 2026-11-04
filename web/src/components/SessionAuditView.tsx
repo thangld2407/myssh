@@ -167,12 +167,12 @@ export const SessionAuditView: React.FC = () => {
                   {sess.recording_path ? (
                     <button
                       onClick={() => openPlayer(sess)}
-                      className="px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold inline-flex items-center gap-1.5 transition shadow-2xs"
+                      className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold inline-flex items-center gap-1.5 transition shadow-xs"
                     >
-                      <Play className="w-3 h-3 text-emerald-400" /> Replay
+                      <Play className="w-3.5 h-3.5 text-emerald-400" /> Replay
                     </button>
                   ) : (
-                    <span className="text-slate-400 text-[11px]">-</span>
+                    <span className="text-slate-400 text-xs">-</span>
                   )}
                 </td>
               </tr>
@@ -180,7 +180,7 @@ export const SessionAuditView: React.FC = () => {
 
             {!loading && sessions.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-400 font-sans">
+                <td colSpan={7} className="py-12 text-center text-slate-400 font-sans text-xs">
                   Chưa có phiên làm việc nào được ghi nhận.
                 </td>
               </tr>
@@ -191,43 +191,46 @@ export const SessionAuditView: React.FC = () => {
 
       {/* Replay Modal */}
       {playingSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-3xl h-[75vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="h-12 border-b border-slate-200 px-4 flex items-center justify-between bg-slate-50/75">
-              <span className="text-xs font-semibold text-slate-900 font-sans">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-3xl h-[75vh] flex flex-col shadow-2xl overflow-hidden animate-modal">
+            <div className="h-14 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75">
+              <span className="text-sm font-semibold text-slate-900 font-sans">
                 Replay: {playingSession.host_name}
               </span>
               <div className="flex items-center space-x-2">
                 <a
                   href={`/api/audit/sessions/${playingSession.id}/recording`}
                   download={`${playingSession.id}.cast`}
-                  className="px-2.5 py-1 rounded-md bg-white hover:bg-slate-100 text-slate-700 text-[11px] font-mono flex items-center gap-1.5 border border-slate-200 shadow-2xs"
+                  className="h-8 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-700 text-xs font-mono flex items-center gap-1.5 border border-slate-200 shadow-2xs active:scale-95 transition"
                 >
-                  <Download className="w-3 h-3 text-slate-500" /> .cast
+                  <Download className="w-3.5 h-3.5 text-slate-500" /> .cast
                 </a>
-                <button onClick={closePlayer} className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition">
+                <button
+                  onClick={closePlayer}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-90 transition"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 bg-[#09090b] p-3 overflow-auto font-mono text-xs text-zinc-100 select-text whitespace-pre-wrap">
+            <div className="flex-1 bg-[#09090b] p-4 overflow-auto font-mono text-xs text-zinc-100 select-text whitespace-pre-wrap">
               {renderedText || <span className="text-zinc-500">// Nhấn Play để bắt đầu phát lại...</span>}
             </div>
 
-            <div className="h-12 border-t border-slate-200 bg-white px-4 flex items-center justify-between shadow-2xs">
-              <div className="flex items-center space-x-2.5">
+            <div className="h-14 border-t border-slate-200 bg-white px-6 flex items-center justify-between shadow-2xs">
+              <div className="flex items-center space-x-3">
                 <button
                   onClick={togglePlay}
-                  className="p-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white transition shadow-2xs"
+                  className="w-9 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 text-white flex items-center justify-center transition shadow-xs active:scale-90"
                 >
-                  {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={restartPlayback}
-                  className="p-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-200"
+                  className="w-9 h-9 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition border border-slate-200 active:scale-90"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-4 h-4" />
                 </button>
                 <div className="w-48 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
                   <div className="bg-slate-900 h-full transition-all" style={{ width: `${progress}%` }} />
@@ -240,7 +243,7 @@ export const SessionAuditView: React.FC = () => {
                   <button
                     key={s}
                     onClick={() => setSpeed(s)}
-                    className={`px-2 py-0.5 rounded-md font-mono text-[11px] transition ${
+                    className={`h-7 px-2.5 rounded-md font-mono text-xs transition active:scale-95 ${
                       speed === s ? 'bg-slate-900 text-white font-semibold shadow-2xs' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >

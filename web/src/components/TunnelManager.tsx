@@ -93,19 +93,19 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-4 text-slate-800">
       {/* Header */}
-      <div className="h-10 flex items-center justify-between border-b border-slate-200 pb-3">
+      <div className="h-12 flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
           <h1 className="text-base font-bold text-slate-900">
             SSH Port Forwarding & Tunnels
           </h1>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-xs text-slate-500">
             Local Port Forwarding và Dynamic SOCKS5 Proxy
           </p>
         </div>
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs"
+          className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
         >
           <Plus className="w-3.5 h-3.5" />
           Tạo Tunnel
@@ -121,17 +121,17 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
           >
             <div>
               <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-700">
                     <Network className="w-4 h-4" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 text-xs">{tunnel.name}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                         {tunnel.type}
                       </span>
-                      <span className={`text-[10px] font-mono font-medium ${tunnel.status === 'running' ? 'text-emerald-600' : 'text-slate-400'}`}>
+                      <span className={`text-xs font-mono font-medium ${tunnel.status === 'running' ? 'text-emerald-600' : 'text-slate-400'}`}>
                         {tunnel.status}
                       </span>
                     </div>
@@ -140,26 +140,27 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
 
                 <button
                   onClick={() => handleDeleteTunnel(tunnel.id)}
-                  className="p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 active:scale-90 transition"
+                  title="Xóa tunnel"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
 
               {/* Network flow */}
-              <div className="mt-3.5 p-3 bg-slate-50 rounded-lg border border-slate-200/80 font-mono text-xs space-y-1.5 shadow-2xs">
-                <div className="flex items-center justify-between text-slate-600 text-[11px]">
+              <div className="mt-3.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 font-mono text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center justify-between text-slate-600 text-xs">
                   <span className="text-slate-400 font-medium">Local:</span>
                   <span className="text-slate-900 font-semibold">{tunnel.bind_host}:{tunnel.bind_port}</span>
                 </div>
 
-                <div className="flex items-center justify-between text-slate-600 text-[11px]">
+                <div className="flex items-center justify-between text-slate-600 text-xs">
                   <span className="text-slate-400 font-medium">Gateway:</span>
                   <span className="text-slate-800">{tunnel.host?.name || 'Server'}</span>
                 </div>
 
                 {tunnel.type === 'local' && (
-                  <div className="flex items-center justify-between text-slate-600 text-[11px] pt-1.5 border-t border-slate-200/60">
+                  <div className="flex items-center justify-between text-slate-600 text-xs pt-1.5 border-t border-slate-200/60">
                     <span className="text-slate-400 font-medium">Target:</span>
                     <span className="text-slate-800 font-medium">{tunnel.target_host}:{tunnel.target_port}</span>
                   </div>
@@ -171,19 +172,19 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
             <div className="mt-4 pt-3 border-t border-slate-100">
               <button
                 onClick={() => handleToggleTunnel(tunnel)}
-                className={`w-full py-1.5 px-3 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 transition ${
+                className={`w-full h-9 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 ${
                   tunnel.status === 'running'
                     ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
-                    : 'bg-slate-900 hover:bg-slate-800 text-white shadow-2xs'
+                    : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
                 }`}
               >
                 {tunnel.status === 'running' ? (
                   <>
-                    <Square className="w-3 h-3 fill-current" /> Dừng
+                    <Square className="w-3.5 h-3.5 fill-current" /> Dừng
                   </>
                 ) : (
                   <>
-                    <Play className="w-3 h-3 fill-current" /> Chạy
+                    <Play className="w-3.5 h-3.5 fill-current" /> Chạy
                   </>
                 )}
               </button>
@@ -200,33 +201,33 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
 
       {/* Add Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop">
           <form
             onSubmit={handleCreateTunnel}
-            className="bg-white border border-slate-200 rounded-xl w-full max-w-md p-6 shadow-2xl space-y-3.5 text-slate-800"
+            className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-800 animate-modal"
           >
-            <h3 className="text-xs font-semibold text-slate-900">Tạo SSH Tunnel mới</h3>
+            <h3 className="text-sm font-semibold text-slate-900">Tạo SSH Tunnel mới</h3>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1">Tên Tunnel</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tên Tunnel</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="vd: Remote Postgres 5432"
-                className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Máy chủ Gateway</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Máy chủ Gateway</label>
                 <select
                   required
                   value={hostId}
                   onChange={(e) => setHostId(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
+                  className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
                 >
                   {hosts.map((h) => (
                     <option key={h.id} value={h.id}>
@@ -237,11 +238,11 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Loại Forwarding</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Loại Forwarding</label>
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value as any)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
+                  className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
                 >
                   <option value="local">Local Port Forwarding</option>
                   <option value="socks5">Dynamic SOCKS5 Proxy</option>
@@ -249,68 +250,68 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3.5">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Bind Host</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Bind Host</label>
                 <input
                   type="text"
                   value={bindHost}
                   onChange={(e) => setBindHost(e.target.value)}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
+                  className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-1">Bind Port</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Bind Port</label>
                 <input
                   type="number"
                   required
                   value={bindPort}
                   onChange={(e) => setBindPort(Number(e.target.value))}
-                  className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
+                  className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
                 />
               </div>
             </div>
 
             {type === 'local' && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Target Host</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Target Host</label>
                   <input
                     type="text"
                     required
                     value={targetHost}
                     onChange={(e) => setTargetHost(e.target.value)}
                     placeholder="127.0.0.1"
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
+                    className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Target Port</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Target Port</label>
                   <input
                     type="number"
                     required
                     value={targetPort}
                     onChange={(e) => setTargetPort(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
+                    className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
                   />
                 </div>
               </div>
             )}
 
-            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+            <div className="flex justify-end space-x-2.5 pt-4 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setShowAddModal(false)}
-                className="px-3.5 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition"
+                className="h-9 px-4 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition active:scale-95"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-2xs transition"
+                className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold shadow-xs transition"
               >
                 Tạo
               </button>

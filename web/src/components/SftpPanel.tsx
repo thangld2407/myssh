@@ -151,9 +151,9 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
   return (
     <div className={`flex flex-col h-full bg-white text-slate-800 ${isEmbedded ? 'border-l border-slate-200' : ''}`}>
       {/* Top Header */}
-      <div className="h-10 border-b border-slate-200 px-3 flex items-center justify-between bg-slate-50/80 shrink-0">
+      <div className="h-12 border-b border-slate-200 px-4 flex items-center justify-between bg-slate-50/80 shrink-0">
         <div className="flex items-center space-x-2 truncate">
-          <HardDrive className="w-3.5 h-3.5 text-slate-700 shrink-0" />
+          <HardDrive className="w-4 h-4 text-slate-700 shrink-0" />
           <span className="font-semibold text-slate-900 text-xs truncate">
             SFTP {isEmbedded ? 'Explorer' : `: ${host.name}`}
           </span>
@@ -169,25 +169,25 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-semibold flex items-center gap-1 transition disabled:opacity-50 shadow-2xs"
+            className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50 shadow-xs"
             title="Tải tệp lên thư mục hiện tại"
           >
-            <Upload className="w-3 h-3" />
+            <Upload className="w-3.5 h-3.5" />
             <span>{uploading ? '...' : 'Upload'}</span>
           </button>
 
           <button
             onClick={() => setShowNewFolderModal(true)}
-            className="p-1 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-90 transition"
             title="Tạo thư mục mới"
           >
-            <FolderPlus className="w-3.5 h-3.5" />
+            <FolderPlus className="w-4 h-4" />
           </button>
 
           <button
             onClick={() => loadDirectory(currentPath)}
             disabled={loading}
-            className="p-1 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-600 hover:text-slate-900 active:scale-90 transition"
             title="Làm mới"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -196,47 +196,47 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-90 transition"
               title="Đóng SFTP"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
       </div>
 
       {/* Breadcrumb Path & Search Bar */}
-      <div className="bg-slate-50/40 px-2.5 py-1.5 border-b border-slate-200 flex items-center justify-between text-xs font-mono shrink-0 gap-2">
-        <div className="flex items-center space-x-1.5 flex-1 min-w-0">
+      <div className="bg-slate-50/40 px-3 py-2 border-b border-slate-200 flex items-center justify-between text-xs font-mono shrink-0 gap-2.5">
+        <div className="flex items-center space-x-2 flex-1 min-w-0">
           <button
             onClick={handleNavigateUp}
             disabled={currentPath === '.' || currentPath === '/'}
-            className="p-1 rounded hover:bg-slate-200 text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-200 text-slate-600 hover:text-slate-900 disabled:opacity-30 disabled:hover:bg-transparent active:scale-90 transition"
             title="Lên thư mục cha"
           >
-            <ArrowUp className="w-3.5 h-3.5" />
+            <ArrowUp className="w-4 h-4" />
           </button>
-          <span className="text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 flex-1 truncate select-all text-[11px] shadow-2xs">
+          <span className="text-slate-800 bg-white px-2.5 py-1 rounded-md border border-slate-200 flex-1 truncate select-all text-xs shadow-2xs font-mono">
             {currentPath}
           </span>
         </div>
 
-        <div className="relative w-28 sm:w-36 shrink-0">
-          <Search className="w-3 h-3 text-slate-400 absolute left-2 top-1.5" />
+        <div className="relative w-32 sm:w-40 shrink-0">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" />
           <input
             type="text"
             value={searchFilter}
             onChange={(e) => setSearchFilter(e.target.value)}
-            placeholder="Lọc..."
-            className="w-full pl-6 pr-2 py-0.5 bg-white border border-slate-200 rounded text-[11px] text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 font-sans"
+            placeholder="Lọc tệp..."
+            className="w-full pl-7 pr-2.5 py-1 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-900 font-sans"
           />
         </div>
       </div>
 
       {/* Error alert */}
       {error && (
-        <div className="m-2 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs flex items-center gap-1.5 shrink-0">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+        <div className="m-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs flex items-center gap-2 shrink-0">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
           <span className="truncate">{error}</span>
         </div>
       )}
@@ -246,10 +246,10 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/60 text-slate-500 font-semibold text-[10px] uppercase tracking-wider sticky top-0">
-              <th className="py-1.5 pl-2.5">Tên</th>
-              <th className="py-1.5 w-16">Size</th>
-              {!isEmbedded && <th className="py-1.5 w-20">Perms</th>}
-              <th className="py-1.5 w-16 text-right pr-2">Action</th>
+              <th className="py-2 pl-3">Tên</th>
+              <th className="py-2 w-16">Size</th>
+              {!isEmbedded && <th className="py-2 w-20">Perms</th>}
+              <th className="py-2 w-20 text-right pr-3">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-mono">
@@ -259,15 +259,15 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
                 onDoubleClick={() => handleItemClick(item)}
                 className="hover:bg-slate-50/80 group transition cursor-pointer select-none"
               >
-                <td className="py-1.5 pl-2.5 flex items-center space-x-1.5 truncate">
+                <td className="py-2 pl-3 flex items-center space-x-2 truncate">
                   {getFileIcon(item)}
                   <span className={`truncate text-xs ${item.is_dir ? 'text-slate-900 font-semibold' : 'text-slate-700'}`}>
                     {item.name}
                   </span>
                 </td>
-                <td className="py-1.5 text-slate-500 text-[11px]">{item.is_dir ? '-' : formatSize(item.size)}</td>
-                {!isEmbedded && <td className="py-1.5 text-slate-400 text-[10px]">{item.mode}</td>}
-                <td className="py-1.5 text-right pr-2">
+                <td className="py-2 text-slate-500 text-xs">{item.is_dir ? '-' : formatSize(item.size)}</td>
+                {!isEmbedded && <td className="py-2 text-slate-400 text-xs">{item.mode}</td>}
+                <td className="py-2 text-right pr-3">
                   <div className="flex items-center justify-end space-x-1 opacity-60 group-hover:opacity-100">
                     {!item.is_dir && (
                       <button
@@ -275,10 +275,10 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
                           e.stopPropagation();
                           handleDownload(item);
                         }}
-                        className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-90 transition"
                         title="Tải về"
                       >
-                        <Download className="w-3 h-3" />
+                        <Download className="w-3.5 h-3.5" />
                       </button>
                     )}
                     <button
@@ -286,10 +286,10 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
                         e.stopPropagation();
                         handleDelete(item);
                       }}
-                      className="p-1 rounded hover:bg-red-50 text-slate-400 hover:text-red-600 transition"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-90 transition"
                       title="Xóa"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </td>
@@ -298,7 +298,7 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
 
             {!loading && filteredItems.length === 0 && (
               <tr>
-                <td colSpan={isEmbedded ? 3 : 4} className="py-8 text-center text-slate-400 font-sans text-xs">
+                <td colSpan={isEmbedded ? 3 : 4} className="py-10 text-center text-slate-400 font-sans text-xs">
                   Thư mục trống
                 </td>
               </tr>
@@ -309,28 +309,28 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
 
       {/* Modal New Folder */}
       {showNewFolderModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-2xs">
-          <form onSubmit={handleCreateFolder} className="bg-white border border-slate-200 rounded-xl p-5 w-full max-w-sm shadow-xl">
-            <h3 className="text-xs font-semibold text-slate-900 mb-2">Tạo thư mục mới</h3>
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-backdrop">
+          <form onSubmit={handleCreateFolder} className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-modal">
+            <h3 className="text-xs font-semibold text-slate-900 mb-2.5">Tạo thư mục mới</h3>
             <input
               type="text"
               autoFocus
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
               placeholder="Tên thư mục..."
-              className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 mb-3 font-mono"
+              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 mb-4 font-mono"
             />
-            <div className="flex justify-end space-x-2">
+            <div className="flex justify-end space-x-2.5">
               <button
                 type="button"
                 onClick={() => setShowNewFolderModal(false)}
-                className="px-3 py-1.5 rounded-md text-xs text-slate-600 hover:bg-slate-100 transition"
+                className="h-9 px-4 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition active:scale-95"
               >
                 Hủy
               </button>
               <button
                 type="submit"
-                className="px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition shadow-2xs"
+                className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold transition shadow-xs"
               >
                 Tạo
               </button>
