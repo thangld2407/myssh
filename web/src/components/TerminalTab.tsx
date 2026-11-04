@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns } from 'lucide-react';
+import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap } from 'lucide-react';
 import { Host } from '../types';
 import { getAuthToken } from '../services/api';
 import { SftpPanel } from './SftpPanel';
+import { SnippetModal } from './SnippetModal';
 
 interface TerminalTabProps {
   host: Host;
@@ -23,6 +24,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
   const [fontSize, setFontSize] = useState<number>(13);
   const [sessionSeconds, setSessionSeconds] = useState<number>(0);
   const [showSplitSftp, setShowSplitSftp] = useState<boolean>(false);
+  const [showSnippetModal, setShowSnippetModal] = useState<boolean>(false);
 
   const snippets = [
     { label: 'ls -la', cmd: 'ls -la\n' },
@@ -96,6 +98,8 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
       cursorStyle: 'block',
       allowTransparency: true,
       scrollback: 10000,
+      scrollOnUserInput: true,
+      smoothScrollDuration: 0,
     });
 
     const fitAddon = new FitAddon();
@@ -105,9 +109,25 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
     term.loadAddon(webLinksAddon);
     term.open(terminalRef.current);
 
+    // Initial fit
     setTimeout(() => {
-      fitAddon.fit();
+      try {
+        fitAddon.fit();
+        term.scrollToBottom();
+      } catch {}
     }, 50);
+
+    // Re-fit when web fonts (JetBrains Mono) finish loading
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        setTimeout(() => {
+          try {
+            fitAddon.fit();
+            term.scrollToBottom();
+          } catch {}
+        }, 80);
+      });
+    }
 
     xtermInstance.current = term;
     fitAddonInstance.current = fitAddon;
@@ -126,6 +146,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
     ws.onopen = () => {
       setStatus('connected');
       term.focus();
+      try {
+        fitAddon.fit();
+      } catch {}
       ws.send(JSON.stringify({
         type: 'resize',
         cols: term.cols,
@@ -134,11 +157,15 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
     };
 
     ws.onmessage = (event) => {
+      const isNearBottom = term.buffer.active.baseY - term.buffer.active.viewportY <= 2;
       if (typeof event.data === 'string') {
         term.write(event.data);
       } else {
         const uint8 = new Uint8Array(event.data);
         term.write(uint8);
+      }
+      if (isNearBottom) {
+        term.scrollToBottom();
       }
     };
 
@@ -156,6 +183,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(data);
       }
+      term.scrollToBottom();
     });
 
     term.onResize((size) => {
@@ -173,15 +201,44 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
     connectWebSocket();
 
     const handleWindowResize = () => {
-      if (fitAddonInstance.current) {
-        fitAddonInstance.current.fit();
+      if (fitAddonInstance.current && xtermInstance.current) {
+        try {
+          fitAddonInstance.current.fit();
+          xtermInstance.current.scrollToBottom();
+        } catch {}
       }
     };
 
     window.addEventListener('resize', handleWindowResize);
 
+    // Active ResizeObserver to continuously track layout changes (Split SFTP, sidebar toggle, devtools)
+    let resizeObserver: ResizeObserver | null = null;
+    if (terminalRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(() => {
+          if (fitAddonInstance.current && xtermInstance.current) {
+            try {
+              fitAddonInstance.current.fit();
+              const { cols, rows } = xtermInstance.current;
+              if (cols && rows && wsInstance.current?.readyState === WebSocket.OPEN) {
+                wsInstance.current.send(JSON.stringify({
+                  type: 'resize',
+                  cols,
+                  rows,
+                }));
+              }
+            } catch {}
+          }
+        });
+      });
+      resizeObserver.observe(terminalRef.current);
+    }
+
     return () => {
       window.removeEventListener('resize', handleWindowResize);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (wsInstance.current) {
         wsInstance.current.close();
       }
@@ -194,6 +251,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
   const sendSnippet = (cmd: string) => {
     if (wsInstance.current?.readyState === WebSocket.OPEN) {
       wsInstance.current.send(cmd);
+      xtermInstance.current?.scrollToBottom();
       xtermInstance.current?.focus();
     }
   };
@@ -203,14 +261,19 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
     setFontSize(newSize);
     if (xtermInstance.current) {
       xtermInstance.current.options.fontSize = newSize;
-      setTimeout(() => fitAddonInstance.current?.fit(), 50);
+      setTimeout(() => {
+        try {
+          fitAddonInstance.current?.fit();
+          xtermInstance.current?.scrollToBottom();
+        } catch {}
+      }, 50);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#09090b] text-zinc-200">
+    <div className="flex flex-col h-full bg-[#09090b] text-zinc-200 min-h-0">
       {/* Control Bar (Light Minimalist Toolbar) */}
-      <div className="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between text-xs font-mono select-none shadow-2xs">
+      <div className="h-12 bg-white border-b border-slate-200 px-4 flex items-center justify-between text-xs font-mono select-none shadow-2xs shrink-0">
         <div className="flex items-center space-x-3.5">
           <div className="flex items-center space-x-2">
             <TerminalIcon className="w-4 h-4 text-slate-700" />
@@ -317,9 +380,18 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
       </div>
 
       {/* Snippet Quick Bar (Light Toolbar) */}
-      <div className="h-8 bg-slate-50 border-b border-slate-200 px-3.5 flex items-center space-x-2 overflow-x-auto select-none shrink-0">
-        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold mr-1">
-          Quick:
+      <div className="h-9 bg-slate-50 border-b border-slate-200 px-3.5 flex items-center space-x-2 overflow-x-auto select-none shrink-0">
+        <button
+          onClick={() => setShowSnippetModal(true)}
+          className="flex items-center gap-1.5 h-6 px-2.5 rounded-md bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold shadow-2xs transition active:scale-95"
+          title="Mở thư viện lệnh mẫu DevOps đầy đủ"
+        >
+          <Zap className="w-3 h-3 text-emerald-600 fill-emerald-600" />
+          <span>Snippets Library</span>
+        </button>
+
+        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold ml-1 mr-1">
+          Lệnh nhanh:
         </span>
         {snippets.map((snip) => (
           <button
@@ -333,24 +405,37 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose }) => {
       </div>
 
       {/* Main Terminal View (Supports Split-View with Embedded SFTP) */}
-      <div className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 bg-[#09090b] p-3 overflow-hidden relative h-full">
-          <div ref={terminalRef} className="w-full h-full" />
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
+        <div className="flex-1 bg-[#09090b] px-3 pt-2 pb-1 overflow-hidden relative h-full min-h-0 flex flex-col">
+          <div ref={terminalRef} className="w-full h-full min-h-0 flex-1 overflow-hidden" />
         </div>
 
         {showSplitSftp && (
-          <div className="w-80 sm:w-96 h-full flex flex-col shrink-0 shadow-lg">
+          <div className="w-80 sm:w-96 h-full flex flex-col shrink-0 shadow-lg min-h-0">
             <SftpPanel
               host={host}
               isEmbedded={true}
               onClose={() => {
                 setShowSplitSftp(false);
-                setTimeout(() => fitAddonInstance.current?.fit(), 60);
+                setTimeout(() => {
+                  try {
+                    fitAddonInstance.current?.fit();
+                    xtermInstance.current?.scrollToBottom();
+                  } catch {}
+                }, 60);
               }}
             />
           </div>
         )}
       </div>
+
+      <SnippetModal
+        isOpen={showSnippetModal}
+        onClose={() => setShowSnippetModal(false)}
+        onExecuteCommand={(cmd) => {
+          sendSnippet(cmd + '\n');
+        }}
+      />
     </div>
   );
 };

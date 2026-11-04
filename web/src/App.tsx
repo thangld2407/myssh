@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Terminal, Shield, Lock, ArrowRight, X, Server, Search, Heart, Sparkles, Zap } from 'lucide-react';
+import { Terminal, Shield, Lock, ArrowRight, X, Server, Search, Heart, Sparkles, Zap, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { Host } from './types';
 import { api } from './services/api';
@@ -17,6 +17,7 @@ import { RoadmapView } from './components/RoadmapView';
 import { ImportSshConfigModal } from './components/ImportSshConfigModal';
 import { SetupWizard } from './components/SetupWizard';
 import { MultiExecTerminal } from './components/MultiExecTerminal';
+import { SnippetModal } from './components/SnippetModal';
 
 interface OpenTerminalTab {
   id: string;
@@ -42,12 +43,15 @@ export const App: React.FC = () => {
   const [multiExecHosts, setMultiExecHosts] = useState<Host[] | null>(null);
   const [showSponsorModal, setShowSponsorModal] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showSnippetModal, setShowSnippetModal] = useState(false);
 
   // Login form state
   const [loginUser, setLoginUser] = useState('');
   const [loginPass, setLoginPass] = useState('');
+  const [showLoginPass, setShowLoginPass] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginSubmitting, setLoginSubmitting] = useState(false);
+  const [loginTouched, setLoginTouched] = useState<Record<string, boolean>>({});
 
   const fetchHosts = async () => {
     try {
@@ -78,12 +82,19 @@ export const App: React.FC = () => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginSubmitting(true);
+    setLoginTouched({ user: true, pass: true });
     setLoginError(null);
+
+    if (!loginUser.trim() || !loginPass.trim()) {
+      setLoginError('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.');
+      return;
+    }
+
+    setLoginSubmitting(true);
     try {
-      await login(loginUser, loginPass);
+      await login(loginUser.trim(), loginPass);
     } catch (err: any) {
-      setLoginError(err.message || 'Đăng nhập không thành công');
+      setLoginError(err.message || 'Đăng nhập không thành công. Sai tài khoản hoặc mật khẩu.');
     } finally {
       setLoginSubmitting(false);
     }
@@ -140,34 +151,69 @@ export const App: React.FC = () => {
           </div>
 
           {loginError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium">
-              {loginError}
+            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{loginError}</span>
             </div>
           )}
 
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
+          <form onSubmit={handleLoginSubmit} noValidate className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tên đăng nhập</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Tên đăng nhập <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
-                required
                 value={loginUser}
                 onChange={(e) => setLoginUser(e.target.value)}
+                onBlur={() => setLoginTouched((p) => ({ ...p, user: true }))}
                 placeholder="Tên tài khoản..."
-                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                className={`w-full h-10 px-3.5 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition ${
+                  loginTouched.user && !loginUser.trim()
+                    ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                    : 'border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900'
+                }`}
               />
+              {loginTouched.user && !loginUser.trim() && (
+                <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>Vui lòng nhập tên đăng nhập</span>
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Mật khẩu</label>
-              <input
-                type="password"
-                required
-                value={loginPass}
-                onChange={(e) => setLoginPass(e.target.value)}
-                placeholder="••••••••"
-                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
-              />
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Mật khẩu <span className="text-rose-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showLoginPass ? 'text' : 'password'}
+                  value={loginPass}
+                  onChange={(e) => setLoginPass(e.target.value)}
+                  onBlur={() => setLoginTouched((p) => ({ ...p, pass: true }))}
+                  placeholder="••••••••"
+                  className={`w-full h-10 pl-3.5 pr-10 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition font-mono ${
+                    loginTouched.pass && !loginPass.trim()
+                      ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                      : 'border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPass(!showLoginPass)}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition"
+                  tabIndex={-1}
+                >
+                  {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {loginTouched.pass && !loginPass.trim() && (
+                <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1 animate-in fade-in">
+                  <AlertCircle className="w-3 h-3 shrink-0" />
+                  <span>Vui lòng nhập mật khẩu</span>
+                </p>
+              )}
             </div>
 
             <button
@@ -175,8 +221,17 @@ export const App: React.FC = () => {
               disabled={loginSubmitting}
               className="w-full h-10 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-sm hover:shadow disabled:opacity-50 mt-2"
             >
-              {loginSubmitting ? 'Đang xác thực...' : 'Đăng nhập'}
-              <ArrowRight className="w-4 h-4" />
+              {loginSubmitting ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Đang xác thực...</span>
+                </>
+              ) : (
+                <>
+                  <span>Đăng nhập</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
@@ -204,6 +259,7 @@ export const App: React.FC = () => {
           setHostToEdit(null);
           setShowHostModal(true);
         }}
+        onOpenSnippets={() => setShowSnippetModal(true)}
         onOpenSponsor={() => setShowSponsorModal(true)}
       />
 
@@ -295,7 +351,7 @@ export const App: React.FC = () => {
         </header>
 
         {/* View Switcher Container */}
-        <main className="flex-1 overflow-hidden relative">
+        <main className="flex-1 overflow-hidden relative min-h-0">
           {/* Dashboard Tab Content */}
           <div className={`h-full overflow-y-auto ${activeTabId === 'dashboard' ? 'block' : 'hidden'}`}>
             {activeView === 'hosts' && (
@@ -407,6 +463,11 @@ export const App: React.FC = () => {
         <SponsorModal onClose={() => setShowSponsorModal(false)} />
       )}
 
+      <SnippetModal
+        isOpen={showSnippetModal}
+        onClose={() => setShowSnippetModal(false)}
+      />
+
       <CommandPalette
         isOpen={showCommandPalette}
         onClose={() => setShowCommandPalette(false)}
@@ -419,6 +480,7 @@ export const App: React.FC = () => {
         }}
         onOpenSponsor={() => setShowSponsorModal(true)}
         onOpenImport={() => setShowImportModal(true)}
+        onOpenSnippets={() => setShowSnippetModal(true)}
         onChangeTheme={() => {}}
       />
     </div>

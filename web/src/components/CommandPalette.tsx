@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Terminal, HardDrive, KeyRound, Network, History, Heart, Sparkles, Server, ArrowRight } from 'lucide-react';
+import { Search, Terminal, HardDrive, KeyRound, Network, History, Heart, Sparkles, Server, ArrowRight, Code2 } from 'lucide-react';
 import { Host } from '../types';
 
 interface CommandPaletteProps {
@@ -11,6 +11,7 @@ interface CommandPaletteProps {
   onSelectView: (view: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap') => void;
   onOpenSponsor: () => void;
   onOpenImport?: () => void;
+  onOpenSnippets?: () => void;
   onChangeTheme: () => void;
 }
 
@@ -23,10 +24,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onSelectView,
   onOpenSponsor,
   onOpenImport,
+  onOpenSnippets,
 }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -35,6 +39,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       setSelectedIndex(0);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    // Keep active item in visible scroll range
+    if (itemRefs.current[selectedIndex]) {
+      itemRefs.current[selectedIndex]?.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth',
+      });
+    }
+  }, [selectedIndex]);
 
   if (!isOpen) return null;
 
@@ -45,6 +59,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       category: 'Actions',
       icon: <Server className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onOpenImport?.(); onClose(); },
+    },
+    {
+      id: 'snippets',
+      title: 'Kho Lệnh Mẫu & Snippet Library (DevOps Quick Commands)',
+      category: 'Actions',
+      icon: <Code2 className="w-3.5 h-3.5 text-emerald-500" />,
+      run: () => { onOpenSnippets?.(); onClose(); },
     },
     {
       id: 'sponsor',
@@ -132,15 +153,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop"
       onClick={onClose}
     >
       <div
-        className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-modal"
+        className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col text-slate-800 animate-modal max-h-[calc(100vh-5rem)]"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="h-14 border-b border-slate-200 px-5 flex items-center space-x-3 bg-white">
+        <div className="h-14 border-b border-slate-200 px-5 flex items-center space-x-3 bg-white shrink-0">
           <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
@@ -158,10 +179,16 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           </kbd>
         </div>
 
-        <div className="max-h-88 overflow-y-auto p-2 space-y-1 bg-slate-50/30">
+        <div
+          ref={listRef}
+          className="flex-1 min-h-0 max-h-[380px] overflow-y-auto p-2 space-y-1 bg-slate-50/30 scroll-smooth"
+        >
           {filtered.map((item, index) => (
             <div
               key={item.id}
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
               onClick={() => item.run()}
               onMouseEnter={() => setSelectedIndex(index)}
               className={`min-h-[44px] px-3.5 py-2 rounded-xl flex items-center justify-between cursor-pointer transition text-xs active:scale-[0.99] ${
@@ -200,7 +227,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
           )}
         </div>
 
-        <div className="h-10 border-t border-slate-200 px-5 bg-white flex items-center justify-between text-xs text-slate-500 font-mono">
+        <div className="h-10 border-t border-slate-200 px-5 bg-white flex items-center justify-between text-xs text-slate-500 font-mono shrink-0">
           <div className="flex items-center space-x-4">
             <span className="flex items-center gap-1">
               <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↑↓</kbd> Di chuyển
@@ -209,7 +236,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↵</kbd> Thực hiện
             </span>
           </div>
-          <span className="font-sans font-medium text-[11px] text-slate-400">MySSH Quick Search</span>
+          <div className="flex items-center gap-2">
+            {filtered.length > 0 && (
+              <span className="font-mono text-[10px] text-slate-400 font-semibold">
+                {selectedIndex + 1}/{filtered.length}
+              </span>
+            )}
+            <span className="font-sans font-medium text-[11px] text-slate-400">MySSH Quick Search</span>
+          </div>
         </div>
       </div>
     </div>

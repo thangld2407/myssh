@@ -63,7 +63,9 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
       lineHeight: 1.25,
       cursorBlink: true,
       allowTransparency: true,
-      scrollback: 2000,
+      scrollback: 3000,
+      scrollOnUserInput: true,
+      smoothScrollDuration: 0,
     });
 
     const fitAddon = new FitAddon();
@@ -72,7 +74,10 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
 
     term.open(el);
     setTimeout(() => {
-      try { fitAddon.fit(); } catch {}
+      try {
+        fitAddon.fit();
+        term.scrollToBottom();
+      } catch {}
     }, 60);
 
     const token = getAuthToken() || '';
@@ -83,11 +88,17 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
 
     ws.onopen = () => {
       setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'connected' }));
-      try { fitAddon.fit(); } catch {}
+      try {
+        fitAddon.fit();
+        term.scrollToBottom();
+      } catch {}
     };
 
     ws.onmessage = (event) => {
       term.write(event.data);
+      if (term.buffer.active.baseY - term.buffer.active.viewportY <= 2) {
+        term.scrollToBottom();
+      }
     };
 
     ws.onclose = () => {
@@ -103,6 +114,7 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(data);
       }
+      term.scrollToBottom();
     });
 
     instances.current[host.id] = {
@@ -121,10 +133,19 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
 
     const handleResize = () => {
       Object.values(instances.current).forEach((inst) => {
-        try { inst.fit.fit(); } catch {}
+        try {
+          inst.fit.fit();
+          inst.term.scrollToBottom();
+        } catch {}
       });
     };
     window.addEventListener('resize', handleResize);
+
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        setTimeout(handleResize, 100);
+      });
+    }
 
     return () => {
       clearTimeout(timer);
@@ -144,6 +165,7 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     Object.values(instances.current).forEach((inst) => {
       if (inst.ws && inst.ws.readyState === WebSocket.OPEN) {
         inst.ws.send(cmd);
+        inst.term.scrollToBottom();
       }
     });
   };
@@ -229,14 +251,14 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
       </div>
 
       {/* Grid of Terminals */}
-      <div className={`flex-1 p-2.5 grid ${getGridClass()} gap-2.5 overflow-hidden`}>
+      <div className={`flex-1 p-2.5 grid ${getGridClass()} gap-2.5 overflow-hidden min-h-0`}>
         {hosts.map((host) => (
           <div
             key={host.id}
-            className="flex flex-col bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-lg h-full"
+            className="flex flex-col bg-[#09090b] border border-zinc-800 rounded-xl overflow-hidden shadow-lg h-full min-h-0"
           >
             {/* Terminal Mini Header */}
-            <div className="h-8 bg-zinc-900 border-b border-zinc-800 px-3 flex items-center justify-between text-xs font-mono select-none">
+            <div className="h-8 bg-zinc-900 border-b border-zinc-800 px-3 flex items-center justify-between text-xs font-mono select-none shrink-0">
               <div className="flex items-center space-x-2 truncate">
                 <span
                   className={`w-2 h-2 rounded-full ${
@@ -261,12 +283,12 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
             </div>
 
             {/* Terminal Canvas */}
-            <div className="flex-1 p-2 overflow-hidden relative">
+            <div className="flex-1 p-2 overflow-hidden relative min-h-0 flex flex-col">
               <div
                 ref={(el) => {
                   terminalRefs.current[host.id] = el;
                 }}
-                className="w-full h-full"
+                className="w-full h-full min-h-0 flex-1 overflow-hidden"
               />
             </div>
           </div>
