@@ -1,0 +1,22 @@
+services:
+  myssh:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: myssh:latest
+    container_name: myssh-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - DB_PATH=/app/data/myssh.db
+      - RECORDINGS_DIR=/app/data/recordings
+      - MASTER_KEY=myssh-production-master-key-replace-me!
+      - JWT_SECRET=myssh-production-jwt-secret-replace-me!
+    volumes:
+      - myssh-data:/app/data
+
+volumes:
+  myssh-data:
+    driver: local

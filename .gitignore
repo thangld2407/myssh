@@ -1,0 +1,27 @@
+# Binaries
+bin/
+myssh
+
+# Data & database
+data/*.db
+data/*.db-*
+data/recordings/*
+!data/recordings/.gitkeep
+
+# Node & Frontend
+node_modules/
+web/node_modules/
+web/dist/
+web/.pnpm-store/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

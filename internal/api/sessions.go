@@ -1,0 +1,57 @@
+package api
+
+import (
+	"net/http"
+	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/myssh/myssh/internal/config"
+	"github.com/myssh/myssh/internal/db"
+)
+
+type SessionHandler struct {
+	cfg *config.Config
+}
+
+func NewSessionHandler(cfg *config.Config) *SessionHandler {
+	return &SessionHandler{cfg: cfg}
+}
+
+func (h *SessionHandler) List(c *gin.Context) {
+	var sessions []db.Session
+	query := db.DB.Preload("User").Order("started_at desc")
+
+	if hostID := c.Query("host_id"); hostID != "" {
+		query = query.Where("host_id = ?", hostID)
+	}
+
+	if err := query.Limit(100).Find(&sessions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query sessions"})
+		return
+	}
+
+	c.JSON(http.StatusOK, sessions)
+}
+
+func (h *SessionHandler) GetRecording(c *gin.Context) {
+	id := c.Param("id")
+	var session db.Session
+	if err := db.DB.First(&session, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Session not found"})
+		return
+	}
+
+	if session.RecordingPath == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Recording file not found for this session"})
+		return
+	}
+
+	if _, err := os.Stat(session.RecordingPath); os.IsNotExist(err) {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Recording file on disk no longer exists"})
+		return
+	}
+
+	c.Header("Content-Type", "application/x-asciicast; charset=utf-8")
+	c.Header("Content-Disposition", "inline; filename="+id+".cast")
+	c.File(session.RecordingPath)
+}
