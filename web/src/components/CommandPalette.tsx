@@ -140,7 +140,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
-        <div className="h-13 border-b border-slate-200 px-4.5 flex items-center space-x-3 bg-slate-50/75">
+        <div className="h-14 border-b border-slate-200 px-5 flex items-center space-x-3 bg-white">
           <Search className="w-4 h-4 text-slate-400 shrink-0" />
           <input
             ref={inputRef}
@@ -150,54 +150,66 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               setQuery(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder="Tìm máy chủ hoặc thao tác..."
-            className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
+            placeholder="Gõ lệnh hoặc tìm máy chủ..."
+            className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
           />
-          <kbd className="px-1.5 py-0.5 rounded-md bg-white text-[10px] font-mono text-slate-500 border border-slate-200 font-semibold shadow-2xs">
+          <kbd className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-mono text-slate-500 border border-slate-200 font-bold shadow-2xs">
             ESC
           </kbd>
         </div>
 
-        <div className="max-h-80 overflow-y-auto p-2 space-y-1 bg-white">
+        <div className="max-h-88 overflow-y-auto p-2 space-y-1 bg-slate-50/30">
           {filtered.map((item, index) => (
             <div
               key={item.id}
               onClick={() => item.run()}
               onMouseEnter={() => setSelectedIndex(index)}
-              className={`min-h-[42px] px-3.5 py-2.5 rounded-xl flex items-center justify-between cursor-pointer transition text-xs active:scale-[0.99] ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl flex items-center justify-between cursor-pointer transition text-xs active:scale-[0.99] ${
                 selectedIndex === index
-                  ? 'bg-slate-100 text-slate-900 font-semibold border border-slate-200 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  ? 'bg-white text-slate-900 font-semibold shadow-xs ring-1 ring-slate-900/10'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
               }`}
             >
               <div className="flex items-center space-x-3">
-                {item.icon}
-                <span>{item.title}</span>
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${
+                    selectedIndex === index
+                      ? 'bg-slate-900 text-white border-slate-900'
+                      : 'bg-slate-100 text-slate-600 border-slate-200/80'
+                  }`}
+                >
+                  {item.icon}
+                </div>
+                <span className="font-medium text-xs text-slate-900">{item.title}</span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 font-medium">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200/60 font-semibold">
                   {item.category}
                 </span>
                 {selectedIndex === index && (
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-700" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-900" />
                 )}
               </div>
             </div>
           ))}
 
           {filtered.length === 0 && (
-            <div className="p-8 text-center text-xs text-slate-400">
-              Không tìm thấy mục nào.
+            <div className="py-12 text-center text-xs text-slate-400">
+              Không tìm thấy lệnh hoặc máy chủ phù hợp với "{query}".
             </div>
           )}
         </div>
 
-        <div className="h-9 border-t border-slate-200 px-4 bg-slate-50/75 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-          <div className="flex items-center space-x-3">
-            <span>↑↓ di chuyển</span>
-            <span>↵ chọn</span>
+        <div className="h-10 border-t border-slate-200 px-5 bg-white flex items-center justify-between text-xs text-slate-500 font-mono">
+          <div className="flex items-center space-x-4">
+            <span className="flex items-center gap-1">
+              <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↑↓</kbd> Di chuyển
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↵</kbd> Thực hiện
+            </span>
           </div>
-          <span>Command Palette</span>
+          <span className="font-sans font-medium text-[11px] text-slate-400">MySSH Quick Search</span>
         </div>
       </div>
     </div>

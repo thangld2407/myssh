@@ -118,7 +118,8 @@ func (h *SFTPHandler) Upload(c *gin.Context) {
 	}
 	defer bridge.Close()
 
-	remotePath := filepath.Join(targetDir, fileHeader.Filename)
+	cleanFilename := filepath.Base(fileHeader.Filename)
+	remotePath := filepath.Join(targetDir, cleanFilename)
 	if err := bridge.UploadFile(remotePath, srcFile); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

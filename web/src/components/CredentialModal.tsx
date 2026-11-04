@@ -102,24 +102,37 @@ export const CredentialModal: React.FC<CredentialModalProps> = ({ onClose, onCre
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop">
       <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden text-slate-800 animate-modal">
         {/* Header */}
-        <div className="h-14 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75">
-          <div className="flex items-center space-x-2.5">
-            <KeyRound className="w-4 h-4 text-slate-700" />
-            <h2 className="font-semibold text-slate-900 text-sm">Key Vault & Credentials (AES-256-GCM)</h2>
+        <div className="h-16 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75 shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
+              <KeyRound className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900 text-sm">Key Vault & Credentials</h2>
+              <p className="text-xs text-slate-500 font-normal">Mã hóa cấp quân sự AES-256-GCM • Argon2id</p>
+            </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            {!showForm && (
+          <div className="flex items-center space-x-2.5">
+            {!showForm ? (
               <button
                 onClick={() => setShowForm(true)}
                 className="h-9 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" /> Thêm Credential
               </button>
+            ) : (
+              <button
+                onClick={() => setShowForm(false)}
+                className="h-9 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold transition shadow-2xs"
+              >
+                Xem Danh Sách ({credentials.length})
+              </button>
             )}
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition active:scale-90"
+              className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition active:scale-90 shadow-2xs"
+              title="Đóng (ESC)"
             >
               <X className="w-4 h-4" />
             </button>
@@ -128,10 +141,13 @@ export const CredentialModal: React.FC<CredentialModalProps> = ({ onClose, onCre
 
         {/* Content */}
         <div className="p-6 overflow-y-auto space-y-4">
-          {showForm && (
-            <form onSubmit={handleSubmit} className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
+          {showForm ? (
+            <form onSubmit={handleSubmit} className="bg-slate-50/60 border border-slate-200 rounded-2xl p-6 space-y-4 shadow-xs">
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-                <h3 className="text-xs font-semibold text-slate-900">Tạo Credential mới</h3>
+                <div>
+                  <h3 className="text-xs font-bold text-slate-900">Tạo Credential Mới</h3>
+                  <p className="text-xs text-slate-500">Dữ liệu nhạy cảm được bảo vệ bằng Master Key và không bao giờ lộ ra ngoài</p>
+                </div>
                 <button
                   type="button"
                   onClick={handleGenerateKey}
@@ -169,7 +185,7 @@ export const CredentialModal: React.FC<CredentialModalProps> = ({ onClose, onCre
               </div>
 
               {generatedInfo && (
-                <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2 shadow-2xs">
+                <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-2 shadow-2xs">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold text-slate-700">
                       Public Key (Thêm vào remote server ~/.ssh/authorized_keys):
@@ -177,9 +193,9 @@ export const CredentialModal: React.FC<CredentialModalProps> = ({ onClose, onCre
                     <button
                       type="button"
                       onClick={() => copyToClipboard(generatedInfo.pub)}
-                      className="h-7 px-2.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs flex items-center gap-1 font-mono transition active:scale-95"
+                      className="h-7 px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs flex items-center gap-1.5 font-mono transition active:scale-95"
                     >
-                      {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-slate-500" />}
+                      {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
                       {copied ? 'Đã copy' : 'Copy'}
                     </button>
                   </div>
@@ -233,71 +249,109 @@ export const CredentialModal: React.FC<CredentialModalProps> = ({ onClose, onCre
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="h-9 px-4 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition active:scale-95"
+                  className="h-9 px-4 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 transition active:scale-95 shadow-2xs"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold disabled:opacity-50 transition shadow-xs"
+                  className="h-9 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold disabled:opacity-50 transition shadow-xs"
                 >
-                  {submitting ? 'Đang lưu...' : 'Mã hóa & Lưu'}
+                  {submitting ? 'Đang lưu...' : 'Mã hóa & Lưu Khóa'}
                 </button>
               </div>
             </form>
-          )}
+          ) : (
+            /* Existing credentials list */
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-1">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Danh sách khóa ({credentials.length})
+                </h3>
+                <span className="text-xs text-slate-400 font-mono">
+                  AES-256-GCM Vault
+                </span>
+              </div>
 
-          {/* Existing credentials */}
-          <div className="space-y-2.5">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Danh sách khóa ({credentials.length})
-            </h3>
-
-            {credentials.map((cred) => (
-              <div
-                key={cred.id}
-                className="p-3.5 bg-white border border-slate-200 hover:border-slate-300 rounded-xl flex items-center justify-between shadow-xs transition"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600">
-                    <Lock className="w-4 h-4" />
+              {credentials.map((cred) => (
+                <div
+                  key={cred.id}
+                  className="p-4 bg-white border border-slate-200 hover:border-slate-300 rounded-xl flex items-center justify-between shadow-xs transition"
+                >
+                  <div className="flex items-center space-x-3.5">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center border ${
+                        cred.type === 'private_key'
+                          ? 'bg-indigo-50 border-indigo-200/80 text-indigo-700'
+                          : 'bg-emerald-50 border-emerald-200/80 text-emerald-700'
+                      }`}
+                    >
+                      {cred.type === 'private_key' ? <KeyRound className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">{cred.name}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border ${
+                            cred.type === 'private_key'
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200/80'
+                              : 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
+                          }`}
+                        >
+                          {cred.type === 'private_key' ? 'SSH Private Key' : 'Password'}
+                        </span>
+                        <span className="text-xs text-slate-400 font-normal">
+                          • Đã mã hóa AES-256
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-slate-900">{cred.name}</h4>
-                    <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
-                      {cred.type}
-                    </span>
+
+                  <div className="flex items-center space-x-2.5">
+                    {cred.public_key ? (
+                      <button
+                        onClick={() => copyToClipboard(cred.public_key!)}
+                        className="h-8 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 text-xs font-mono flex items-center gap-1.5 border border-slate-200 shadow-2xs transition"
+                        title="Copy Public Key"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-slate-400" /> Public Key
+                      </button>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-mono tracking-widest bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200/70 select-none">
+                        ••••••••
+                      </span>
+                    )}
+                    <button
+                      onClick={() => handleDelete(cred.id, cred.name)}
+                      className="w-8 h-8 rounded-lg border border-slate-200 bg-white hover:border-red-200 hover:bg-red-50 text-slate-400 hover:text-red-600 flex items-center justify-center active:scale-90 transition shadow-2xs"
+                      title="Xóa khóa này"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
+              ))}
 
-                <div className="flex items-center space-x-2">
-                  {cred.public_key && (
-                    <button
-                      onClick={() => copyToClipboard(cred.public_key!)}
-                      className="h-8 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 text-xs font-mono flex items-center gap-1.5 border border-slate-200 shadow-2xs transition"
-                      title="Copy Public Key"
-                    >
-                      <Copy className="w-3.5 h-3.5 text-slate-400" /> Public Key
-                    </button>
-                  )}
+              {!loading && credentials.length === 0 && (
+                <div className="text-center py-12 border-2 border-dashed border-slate-200 rounded-2xl p-6">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mx-auto mb-3">
+                    <KeyRound className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-slate-800">Chưa có credential nào</h4>
+                  <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                    Thêm SSH Private Key hoặc Password để bắt đầu kết nối an toàn tới các máy chủ từ xa.
+                  </p>
                   <button
-                    onClick={() => handleDelete(cred.id, cred.name)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-90 transition"
-                    title="Xóa"
+                    onClick={() => setShowForm(true)}
+                    className="mt-4 h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-xs active:scale-95 transition"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Plus className="w-3.5 h-3.5" /> Thêm Credential Đầu Tiên
                   </button>
                 </div>
-              </div>
-            ))}
-
-            {!loading && credentials.length === 0 && !showForm && (
-              <div className="text-center py-8 text-slate-400 text-xs">
-                Chưa có credential nào được lưu.
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

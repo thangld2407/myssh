@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Network, Play, Square, Plus, Trash2 } from 'lucide-react';
+import { Network, Play, Square, Plus, Trash2, X } from 'lucide-react';
 import { Tunnel, Host } from '../types';
 import { api } from '../services/api';
 
@@ -204,21 +204,40 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop">
           <form
             onSubmit={handleCreateTunnel}
-            className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4 text-slate-800 animate-modal"
+            className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden text-slate-800 animate-modal"
           >
-            <h3 className="text-sm font-semibold text-slate-900">Tạo SSH Tunnel mới</h3>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tên Tunnel</label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="vd: Remote Postgres 5432"
-                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
-              />
+            <div className="h-16 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75 shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-xs">
+                  <Network className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Tạo SSH Tunnel Mới</h3>
+                  <p className="text-xs text-slate-500 font-normal">Port Forwarding hoặc Dynamic SOCKS5</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition active:scale-90 shadow-2xs"
+                title="Đóng (ESC)"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Tên Tunnel</label>
+                <input
+                  type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="vd: Remote Postgres 5432"
+                  className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900"
+                />
+              </div>
 
             <div className="grid grid-cols-2 gap-3.5">
               <div>
@@ -315,6 +334,7 @@ export const TunnelManager: React.FC<TunnelManagerProps> = ({ hosts }) => {
               >
                 Tạo
               </button>
+            </div>
             </div>
           </form>
         </div>

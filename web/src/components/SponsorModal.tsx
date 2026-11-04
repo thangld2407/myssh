@@ -27,15 +27,21 @@ export const SponsorModal: React.FC<SponsorModalProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4 animate-backdrop">
       <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden text-slate-800 animate-modal">
         {/* Modal Header */}
-        <div className="h-14 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75">
-          <div className="flex items-center space-x-2.5">
-            <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-            <h2 className="font-semibold text-slate-900 text-sm">Sponsor MySSH (Build in Public)</h2>
+        <div className="h-16 border-b border-slate-200 px-6 flex items-center justify-between bg-slate-50/75 shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 border border-rose-200/80 flex items-center justify-center shadow-xs">
+              <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+            </div>
+            <div>
+              <h2 className="font-bold text-slate-900 text-sm">Sponsor MySSH (Build in Public)</h2>
+              <p className="text-xs text-slate-500 font-normal">Ủng hộ duy trì hạ tầng và biểu quyết tính năng mới</p>
+            </div>
           </div>
 
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition active:scale-90"
+            className="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition active:scale-90 shadow-2xs"
+            title="Đóng (ESC)"
           >
             <X className="w-4 h-4" />
           </button>
