@@ -158,11 +158,17 @@ make build
 
 ---
 
-## ⭐️ Community & Star
+## 👨‍💻 Author & Support
 
-MySSH is 100% free and open-source software built for developers, homelab enthusiasts, and system administrators.
+MySSH is created & maintained with ❤️ by **Victor Le** ([@thangld2407](https://github.com/thangld2407)).
 
-If you find MySSH useful, please consider giving the project a ⭐️ on [GitHub](https://github.com/thangld2407/myssh) and sharing it with your friends!
+If you find MySSH useful, please consider giving the project a ⭐️ on [GitHub](https://github.com/thangld2407/myssh) to boost visibility!
+
+<p align="center">
+  <img src="web/public/momo.jpg" width="200" alt="MoMo QR - Victor Le" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" />
+  <br />
+  <sub>☕ <i>Buy author Victor Le a coffee via MoMo QR</i></sub>
+</p>
 
 ---
 
