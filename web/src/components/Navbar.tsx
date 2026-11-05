@@ -112,6 +112,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             Session Audit
           </button>
 
+          {/* Public Roadmap commented out
           <button
             onClick={() => onSelectView('roadmap')}
             className={`px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 transition-all ${
@@ -123,6 +124,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             Roadmap & Vote
           </button>
+          */}
         </nav>
       </div>
 

@@ -54,7 +54,7 @@ func Load() *Config {
 		EnableTunnels:         getEnvBool("FEATURE_TUNNELS", true),
 		EnableImportSSHConfig: getEnvBool("FEATURE_IMPORT_SSH_CONFIG", true),
 		EnableSnippets:        getEnvBool("FEATURE_SNIPPETS", true),
-		EnablePublicRoadmap:   getEnvBool("FEATURE_PUBLIC_ROADMAP", true),
+		EnablePublicRoadmap:   getEnvBool("FEATURE_PUBLIC_ROADMAP", false),
 		EnableSponsor:         getEnvBool("FEATURE_SPONSOR", true),
 	}
 

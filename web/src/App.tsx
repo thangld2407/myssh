@@ -54,7 +54,7 @@ export const App: React.FC = () => {
     enable_tunnels: true,
     enable_import_ssh_config: true,
     enable_snippets: true,
-    enable_public_roadmap: true,
+    enable_public_roadmap: false,
     enable_sponsor: true,
   });
 
@@ -509,9 +509,11 @@ export const App: React.FC = () => {
 
             {activeView === 'tunnels' && <TunnelManager hosts={hosts} />}
 
+            {/* Public Roadmap commented out
             {activeView === 'roadmap' && (
               <RoadmapView onOpenSponsor={() => setShowSponsorModal(true)} />
             )}
+            */}
           </div>
 
           {/* Active Terminal Tabs (Always in DOM for background execution) */}

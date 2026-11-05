@@ -76,6 +76,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Heart className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onOpenSponsor(); onClose(); },
     }] : []),
+    /* Public Roadmap commented out
     ...(features?.enable_public_roadmap !== false ? [{
       id: 'view-roadmap',
       title: 'Public Roadmap & Biểu Quyết Tính Năng',
@@ -83,6 +84,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Sparkles className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('roadmap'); onClose(); },
     }] : []),
+    */
     {
       id: 'view-hosts',
       title: 'Quản Lý Máy Chủ & Hosts',

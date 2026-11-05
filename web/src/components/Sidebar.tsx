@@ -189,37 +189,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             })}
           </div>
 
-          {/* Community */}
-          {(features?.enable_public_roadmap !== false || features?.enable_sponsor !== false) && (
+          {/* Community: Sponsor */}
+          {features?.enable_sponsor !== false && (
             <div className="space-y-1.5 pt-3.5 border-t border-slate-200">
-              {features?.enable_public_roadmap !== false && (
-                <button
-                  onClick={() => onSelectView('roadmap')}
-                  className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
-                    activeView === 'roadmap'
-                      ? 'bg-slate-100 text-slate-900 border border-slate-200/80 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  <Sparkles className="w-4 h-4 text-slate-500" />
-                  <span>Public Roadmap</span>
-                </button>
-              )}
-
-              {features?.enable_sponsor !== false && (
-                <button
-                  onClick={onOpenSponsor}
-                  className="w-full h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-between text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 transition-all duration-150 active:scale-[0.98] border border-slate-200 shadow-2xs"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
-                    <span>Ủng hộ dự án</span>
-                  </div>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white text-rose-600 font-semibold border border-rose-100 shadow-2xs">
-                    Sponsor
-                  </span>
-                </button>
-              )}
+              <button
+                onClick={onOpenSponsor}
+                className="w-full h-9 px-3 rounded-lg text-xs font-medium flex items-center justify-between text-slate-700 bg-slate-50 hover:bg-slate-100 hover:text-slate-900 transition-all duration-150 active:scale-[0.98] border border-slate-200 shadow-2xs"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
+                  <span>Ủng hộ dự án</span>
+                </div>
+                <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white text-rose-600 font-semibold border border-rose-100 shadow-2xs">
+                  Sponsor
+                </span>
+              </button>
             </div>
           )}
         </div>
