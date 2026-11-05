@@ -219,4 +219,9 @@ export interface K8sTestResult {
   current_context: string;
 }
 
+export interface ApiErrorResponse {
+  error_code?: string;
+  error: string;
+}
+
 

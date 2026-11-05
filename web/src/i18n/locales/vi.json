@@ -340,5 +340,28 @@
       "testFailed": "Không thể kết nối tới cụm K8s",
       "saveFailed": "Lưu cụm thất bại"
     }
+  },
+  "api_errors": {
+    "AUTH_RATE_LIMIT_EXCEEDED": "Quá nhiều lần đăng nhập thất bại. Vui lòng chờ trước khi thử lại.",
+    "AUTH_SETUP_ALREADY_COMPLETED": "Hệ thống đã được thiết lập quản trị viên. Vui lòng đăng nhập.",
+    "AUTH_SETUP_INVALID_PAYLOAD": "Dữ liệu cấu hình không hợp lệ.",
+    "AUTH_SETUP_PASSWORD_TOO_SHORT": "Mật khẩu quản trị phải có độ dài tối thiểu 8 ký tự.",
+    "AUTH_SETUP_PASSWORD_HASH_FAILED": "Không thể mã hóa mật khẩu.",
+    "AUTH_SETUP_CREATE_USER_FAILED": "Không thể tạo tài khoản quản trị viên.",
+    "AUTH_SETUP_TOKEN_GEN_FAILED": "Không thể tạo mã xác thực JWT.",
+    "AUTH_INVALID_PAYLOAD": "Yêu cầu đăng nhập không hợp lệ.",
+    "AUTH_INVALID_CREDENTIALS": "Tên đăng nhập hoặc mật khẩu không chính xác.",
+    "AUTH_2FA_REQUIRED": "Vui lòng nhập mã xác thực hai yếu tố (2FA).",
+    "AUTH_2FA_INVALID_CODE": "Mã xác thực 2FA không chính xác hoặc đã hết hạn.",
+    "AUTH_LOGIN_TOKEN_GEN_FAILED": "Lỗi sinh token xác thực.",
+    "AUTH_USER_NOT_FOUND": "Tài khoản người dùng không tồn tại.",
+    "AUTH_2FA_GENERATE_FAILED": "Không thể sinh mã xác thực 2FA.",
+    "AUTH_2FA_INVALID_PAYLOAD": "Dữ liệu kích hoạt 2FA không hợp lệ.",
+    "AUTH_2FA_UPDATE_FAILED": "Không thể cập nhật cấu hình bảo mật.",
+    "AUTH_2FA_CONFIRM_PASSWORD_REQUIRED": "Vui lòng nhập mật khẩu xác nhận.",
+    "AUTH_2FA_PASSWORD_MISMATCH": "Mật khẩu xác nhận không chính xác.",
+    "AUTH_2FA_DISABLE_FAILED": "Không thể tắt xác thực hai yếu tố (2FA).",
+    "FEATURE_DISABLED": "Tính năng này đã bị vô hiệu hóa trong cấu hình hệ thống.",
+    "FORBIDDEN_ROLE": "Bạn không có quyền thực hiện hành động này."
   }
 }

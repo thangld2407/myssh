@@ -96,7 +96,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		return func(c *gin.Context) {
 			if !enabled {
 				c.AbortWithStatusJSON(403, gin.H{
-					"error": "Tính năng '" + name + "' đã bị vô hiệu hóa trong cấu hình hệ thống (.env)",
+					"error_code": "FEATURE_DISABLED",
+					"error":      fmt.Sprintf("Feature '%s' has been disabled in system configuration (.env)", name),
 				})
 				return
 			}

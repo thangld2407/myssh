@@ -61,7 +61,7 @@ func checkRateLimit(cfg *config.Config, key string) error {
 
 	if attempt.count >= maxAttempts {
 		remaining := window - time.Since(attempt.lastTried)
-		return fmt.Errorf("Quá nhiều lần đăng nhập thất bại. Vui lòng chờ %d giây trước khi thử lại", int(remaining.Seconds()))
+		return fmt.Errorf("Too many failed login attempts. Please wait %d seconds before trying again", int(remaining.Seconds()))
 	}
 	return nil
 }
@@ -141,25 +141,37 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 	var count int64
 	db.DB.Model(&db.User{}).Count(&count)
 	if count > 0 {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Hệ thống đã được thiết lập quản trị viên. Vui lòng đăng nhập."})
+		c.JSON(http.StatusForbidden, gin.H{
+			"error_code": "AUTH_SETUP_ALREADY_COMPLETED",
+			"error":      "System administrator has already been configured. Please log in.",
+		})
 		return
 	}
 
 	var req SetupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu cấu hình không hợp lệ"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_code": "AUTH_SETUP_INVALID_PAYLOAD",
+			"error":      "Invalid setup configuration data",
+		})
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
 
 	if len(req.Password) < 8 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Mật khẩu quản trị phải có độ dài tối thiểu 8 ký tự"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_code": "AUTH_SETUP_PASSWORD_TOO_SHORT",
+			"error":      "Admin password must be at least 8 characters long",
+		})
 		return
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể mã hóa mật khẩu"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_SETUP_PASSWORD_HASH_FAILED",
+			"error":      "Failed to hash password",
+		})
 		return
 	}
 
@@ -179,13 +191,19 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 	}
 
 	if err := db.DB.Create(&admin).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo tài khoản admin: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_SETUP_CREATE_USER_FAILED",
+			"error":      "Failed to create admin user: " + err.Error(),
+		})
 		return
 	}
 
 	token, err := middleware.GenerateToken(&admin, h.cfg.JWTSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tạo mã xác thực JWT"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_SETUP_TOKEN_GEN_FAILED",
+			"error":      "Failed to generate JWT authentication token",
+		})
 		return
 	}
 
@@ -210,13 +228,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	clientIP := c.ClientIP()
 	ipKey := "ip:" + clientIP
 	if err := checkRateLimit(h.cfg, ipKey); err != nil {
-		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"error_code": "AUTH_RATE_LIMIT_EXCEEDED",
+			"error":      err.Error(),
+		})
 		return
 	}
 
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Yêu cầu đăng nhập không hợp lệ"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_code": "AUTH_INVALID_PAYLOAD",
+			"error":      "Invalid login request payload",
+		})
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
@@ -225,7 +249,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// Check Account / Username rate limit (locks out brute-force across arbitrary/spoofed IPs)
 	if req.Username != "" {
 		if err := checkRateLimit(h.cfg, userKey); err != nil {
-			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error_code": "AUTH_RATE_LIMIT_EXCEEDED",
+				"error":      err.Error(),
+			})
 			return
 		}
 	}
@@ -234,24 +261,30 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	if err := db.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
 		recordFailedAttempt(h.cfg, ipKey)
 		recordFailedAttempt(h.cfg, userKey)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tên đăng nhập hoặc mật khẩu không chính xác"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error_code": "AUTH_INVALID_CREDENTIALS",
+			"error":      "Invalid username or password",
+		})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		recordFailedAttempt(h.cfg, ipKey)
 		recordFailedAttempt(h.cfg, userKey)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tên đăng nhập hoặc mật khẩu không chính xác"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error_code": "AUTH_INVALID_CREDENTIALS",
+			"error":      "Invalid username or password",
+		})
 		return
 	}
 
-	// Kiểm tra nếu tài khoản kích hoạt 2FA
+	// Check if account has 2FA enabled
 	if user.TwoFactorEnabled {
 		code := strings.TrimSpace(req.Code)
 		if code == "" {
 			c.JSON(http.StatusOK, gin.H{
 				"two_factor_required": true,
-				"message":             "Vui lòng nhập mã xác thực hai yếu tố (2FA)",
+				"message":             "Please enter your two-factor authentication (2FA) code",
 			})
 			return
 		}
@@ -259,7 +292,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		if !totp.Validate(code, user.TwoFactorSecret) {
 			recordFailedAttempt(h.cfg, ipKey)
 			recordFailedAttempt(h.cfg, userKey)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Mã xác thực 2FA không chính xác hoặc đã hết hạn"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error_code": "AUTH_2FA_INVALID_CODE",
+				"error":      "Invalid or expired 2FA verification code",
+			})
 			return
 		}
 	}
@@ -269,7 +305,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	token, err := middleware.GenerateToken(&user, h.cfg.JWTSecret)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Lỗi sinh token xác thực"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_LOGIN_TOKEN_GEN_FAILED",
+			"error":      "Failed to generate authentication token",
+		})
 		return
 	}
 
@@ -335,16 +374,19 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 			middleware.RevokeToken(claims.ID, exp)
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "Đăng xuất thành công"})
+	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
-// Generate2FA tạo Secret Key và QR Code cho ứng dụng Google Authenticator / Authy
+// Generate2FA generates a TOTP secret and QR code for Google Authenticator / Authy
 func (h *AuthHandler) Generate2FA(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	var user db.User
 	if err := db.DB.First(&user, "id = ?", userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Người dùng không tồn tại"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"error_code": "AUTH_USER_NOT_FOUND",
+			"error":      "User not found",
+		})
 		return
 	}
 
@@ -353,7 +395,10 @@ func (h *AuthHandler) Generate2FA(c *gin.Context) {
 		AccountName: user.Username,
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể sinh mã 2FA: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_2FA_GENERATE_FAILED",
+			"error":      "Failed to generate 2FA secret: " + err.Error(),
+		})
 		return
 	}
 
@@ -378,19 +423,25 @@ type Enable2FARequest struct {
 	Code   string `json:"code" binding:"required"`
 }
 
-// Enable2FA kiểm tra mã 6 số đầu tiên và kích hoạt 2FA cho tài khoản
+// Enable2FA validates the initial 6-digit TOTP code and enables 2FA for the account
 func (h *AuthHandler) Enable2FA(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	var req Enable2FARequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu kích hoạt 2FA không hợp lệ"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_code": "AUTH_2FA_INVALID_PAYLOAD",
+			"error":      "Invalid 2FA activation payload",
+		})
 		return
 	}
 
 	var user db.User
 	if err := db.DB.First(&user, "id = ?", userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Người dùng không tồn tại"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"error_code": "AUTH_USER_NOT_FOUND",
+			"error":      "User not found",
+		})
 		return
 	}
 
@@ -398,7 +449,10 @@ func (h *AuthHandler) Enable2FA(c *gin.Context) {
 	cleanCode := strings.TrimSpace(req.Code)
 
 	if !totp.Validate(cleanCode, cleanSecret) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Mã xác thực 2FA không chính xác hoặc đã hết hạn"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_code": "AUTH_2FA_INVALID_CODE",
+			"error":      "Invalid or expired 2FA verification code",
+		})
 		return
 	}
 
@@ -407,13 +461,16 @@ func (h *AuthHandler) Enable2FA(c *gin.Context) {
 	user.UpdatedAt = time.Now()
 
 	if err := db.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật cấu hình bảo mật: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_2FA_UPDATE_FAILED",
+			"error":      "Failed to update security settings: " + err.Error(),
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Xác thực hai yếu tố (2FA) đã được kích hoạt thành công",
+		"message": "Two-factor authentication (2FA) enabled successfully",
 	})
 }
 
@@ -421,24 +478,33 @@ type Disable2FARequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Disable2FA tắt 2FA khi có xác nhận mật khẩu tài khoản
+// Disable2FA disables 2FA upon verifying the account password
 func (h *AuthHandler) Disable2FA(c *gin.Context) {
 	userID, _ := c.Get("user_id")
 
 	var req Disable2FARequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Vui lòng nhập mật khẩu xác nhận"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error_code": "AUTH_2FA_CONFIRM_PASSWORD_REQUIRED",
+			"error":      "Please enter your password to confirm",
+		})
 		return
 	}
 
 	var user db.User
 	if err := db.DB.First(&user, "id = ?", userID).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Người dùng không tồn tại"})
+		c.JSON(http.StatusNotFound, gin.H{
+			"error_code": "AUTH_USER_NOT_FOUND",
+			"error":      "User not found",
+		})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Mật khẩu xác nhận không chính xác"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error_code": "AUTH_2FA_PASSWORD_MISMATCH",
+			"error":      "Incorrect confirmation password",
+		})
 		return
 	}
 
@@ -447,12 +513,15 @@ func (h *AuthHandler) Disable2FA(c *gin.Context) {
 	user.UpdatedAt = time.Now()
 
 	if err := db.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tắt 2FA: " + err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_2FA_DISABLE_FAILED",
+			"error":      "Failed to disable 2FA: " + err.Error(),
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "Đã tắt xác thực hai yếu tố (2FA) thành công",
+		"message": "Two-factor authentication (2FA) disabled successfully",
 	})
 }

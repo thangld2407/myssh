@@ -17,6 +17,7 @@ import {
   K8sPortForward,
   K8sTestResult,
 } from '../types';
+import i18n from '../i18n';
 
 const API_BASE = '/api';
 
@@ -59,7 +60,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     let errorMsg = 'Request failed';
     try {
       const errData = await res.json();
-      errorMsg = errData.error || errorMsg;
+      if (errData.error_code && i18n.exists(`api_errors.${errData.error_code}`)) {
+        errorMsg = i18n.t(`api_errors.${errData.error_code}`);
+      } else {
+        errorMsg = errData.error || errorMsg;
+      }
     } catch {
       errorMsg = await res.text();
     }

@@ -428,3 +428,62 @@ func TestLoginRateLimit_AccountLockoutBypassesSpoofedIP(t *testing.T) {
 		t.Fatalf("Attempt 6 must be blocked with 429 Too Many Requests, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+func TestErrorCodes_AuthenticationAndFeatureGuard(t *testing.T) {
+	setupTestDB(t)
+
+	cfg := &config.Config{
+		JWTSecret: "test-jwt-secret-xyz",
+		Features: config.FeatureFlags{
+			EnableSFTP: false, // Disabled to test featureGuard error code
+		},
+	}
+	r := SetupRouter(cfg)
+
+	// 1. Setup with short password (< 8 chars) -> AUTH_SETUP_PASSWORD_TOO_SHORT
+	body, _ := json.Marshal(map[string]string{
+		"username": "admin",
+		"password": "123",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/auth/setup", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	var res map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if res["error_code"] != "AUTH_SETUP_PASSWORD_TOO_SHORT" {
+		t.Errorf("Expected error_code AUTH_SETUP_PASSWORD_TOO_SHORT, got %v", res["error_code"])
+	}
+
+	// 2. Login with non-existent user -> AUTH_INVALID_CREDENTIALS
+	body, _ = json.Marshal(map[string]string{
+		"username": "nonexistent",
+		"password": "password123",
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	res = nil
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if res["error_code"] != "AUTH_INVALID_CREDENTIALS" {
+		t.Errorf("Expected error_code AUTH_INVALID_CREDENTIALS, got %v", res["error_code"])
+	}
+
+	// 3. Test Feature Guard on disabled feature -> FEATURE_DISABLED
+	adminUser := &db.User{ID: "adm-1", Username: "adm", Role: "admin"}
+	token, _ := middleware.GenerateToken(adminUser, cfg.JWTSecret)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/sftp/dummy-host/list", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+
+	res = nil
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if res["error_code"] != "FEATURE_DISABLED" {
+		t.Errorf("Expected error_code FEATURE_DISABLED, got %v", res["error_code"])
+	}
+}

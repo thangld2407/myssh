@@ -340,5 +340,28 @@
       "testFailed": "Failed to connect to cluster",
       "saveFailed": "Failed to save cluster"
     }
+  },
+  "api_errors": {
+    "AUTH_RATE_LIMIT_EXCEEDED": "Too many failed login attempts. Please wait before trying again.",
+    "AUTH_SETUP_ALREADY_COMPLETED": "System administrator has already been configured. Please log in.",
+    "AUTH_SETUP_INVALID_PAYLOAD": "Invalid setup configuration data.",
+    "AUTH_SETUP_PASSWORD_TOO_SHORT": "Admin password must be at least 8 characters long.",
+    "AUTH_SETUP_PASSWORD_HASH_FAILED": "Failed to hash password.",
+    "AUTH_SETUP_CREATE_USER_FAILED": "Failed to create administrator account.",
+    "AUTH_SETUP_TOKEN_GEN_FAILED": "Failed to generate authentication token.",
+    "AUTH_INVALID_PAYLOAD": "Invalid login request payload.",
+    "AUTH_INVALID_CREDENTIALS": "Invalid username or password.",
+    "AUTH_2FA_REQUIRED": "Please enter your two-factor authentication (2FA) code.",
+    "AUTH_2FA_INVALID_CODE": "Invalid or expired 2FA verification code.",
+    "AUTH_LOGIN_TOKEN_GEN_FAILED": "Failed to generate authentication token.",
+    "AUTH_USER_NOT_FOUND": "User account does not exist.",
+    "AUTH_2FA_GENERATE_FAILED": "Failed to generate two-factor authentication secret.",
+    "AUTH_2FA_INVALID_PAYLOAD": "Invalid two-factor authentication payload.",
+    "AUTH_2FA_UPDATE_FAILED": "Failed to update security settings.",
+    "AUTH_2FA_CONFIRM_PASSWORD_REQUIRED": "Please enter your password to confirm.",
+    "AUTH_2FA_PASSWORD_MISMATCH": "Incorrect confirmation password.",
+    "AUTH_2FA_DISABLE_FAILED": "Failed to disable two-factor authentication.",
+    "FEATURE_DISABLED": "This feature has been disabled in system configuration.",
+    "FORBIDDEN_ROLE": "You do not have permission to perform this action."
   }
 }
