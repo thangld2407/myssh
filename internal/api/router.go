@@ -54,14 +54,28 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	}
 
 	// CORS Setup
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length", "Content-Disposition"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
+	corsConfig := cors.Config{
+		AllowMethods:  []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:  []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		ExposeHeaders: []string{"Content-Length", "Content-Disposition"},
+		MaxAge:        12 * time.Hour,
+	}
+
+	if cfg != nil && len(cfg.AllowedOrigins) > 0 {
+		corsConfig.AllowOrigins = cfg.AllowedOrigins
+	} else {
+		corsConfig.AllowOriginFunc = func(origin string) bool {
+			if origin == "" ||
+				strings.HasPrefix(origin, "http://localhost:") ||
+				strings.HasPrefix(origin, "http://127.0.0.1:") ||
+				strings.HasPrefix(origin, "https://localhost:") ||
+				strings.HasPrefix(origin, "https://127.0.0.1:") {
+				return true
+			}
+			return false
+		}
+	}
+	r.Use(cors.New(corsConfig))
 
 	// Handlers
 	authHandler := NewAuthHandler(cfg)

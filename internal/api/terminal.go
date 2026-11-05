@@ -76,5 +76,6 @@ func (h *TerminalHandler) Connect(c *gin.Context) {
 		rows,
 		h.cfg.RecordInputKeystrokes,
 		maxRecordingBytes,
+		h.cfg.AllowedOrigins,
 	)
 }

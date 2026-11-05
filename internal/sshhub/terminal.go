@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -14,12 +16,35 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for dev/embedded use
-	},
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
+// IsOriginAllowed validates whether an HTTP/WebSocket Origin header is permissible.
+func IsOriginAllowed(r *http.Request, allowedOrigins []string) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // Same-origin or non-browser client
+	}
+
+	u, err := url.Parse(origin)
+	if err == nil && u.Host != "" && (u.Host == r.Host || u.Host == r.Header.Get("Host")) {
+		return true // Same-host origin
+	}
+
+	if len(allowedOrigins) == 0 {
+		// Default development allowance: localhost and loopback interfaces
+		if strings.HasPrefix(origin, "http://localhost:") ||
+			strings.HasPrefix(origin, "http://127.0.0.1:") ||
+			strings.HasPrefix(origin, "https://localhost:") ||
+			strings.HasPrefix(origin, "https://127.0.0.1:") {
+			return true
+		}
+		return false
+	}
+
+	for _, allowed := range allowedOrigins {
+		if allowed == "*" || strings.EqualFold(allowed, origin) {
+			return true
+		}
+	}
+	return false
 }
 
 type WindowSizeMessage struct {
@@ -38,7 +63,16 @@ func HandleTerminalSession(
 	initialCols, initialRows int,
 	recordInput bool,
 	maxRecordingBytes int64,
+	allowedOrigins []string,
 ) {
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(req *http.Request) bool {
+			return IsOriginAllowed(req, allowedOrigins)
+		},
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,
+	}
+
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[Terminal] WebSocket upgrade error: %v\n", err)

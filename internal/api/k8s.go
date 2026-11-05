@@ -15,17 +15,10 @@ import (
 	"github.com/myssh/myssh/internal/crypto"
 	"github.com/myssh/myssh/internal/db"
 	"github.com/myssh/myssh/internal/k8shub"
+	"github.com/myssh/myssh/internal/sshhub"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
-
-var k8sWsUpgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
-}
 
 type K8sHandler struct {
 	cfg *config.Config
@@ -508,7 +501,19 @@ func (h *K8sHandler) PodExec(c *gin.Context) {
 		return
 	}
 
-	ws, err := k8sWsUpgrader.Upgrade(c.Writer, c.Request, nil)
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			var allowed []string
+			if h.cfg != nil {
+				allowed = h.cfg.AllowedOrigins
+			}
+			return sshhub.IsOriginAllowed(r, allowed)
+		},
+		ReadBufferSize:  4096,
+		WriteBufferSize: 4096,
+	}
+
+	ws, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		return
 	}

@@ -45,6 +45,7 @@ type Config struct {
 	RateLimitMaxAttempts   int          `json:"rate_limit_max_attempts"`
 	RateLimitWindowMinutes int          `json:"rate_limit_window_minutes"`
 	TrustedProxies         []string     `json:"trusted_proxies,omitempty"`
+	AllowedOrigins         []string     `json:"allowed_origins,omitempty"`
 	Features               FeatureFlags `json:"features"`
 }
 
@@ -147,6 +148,17 @@ func Load() *Config {
 			p = strings.TrimSpace(p)
 			if p != "" {
 				trustedProxies = append(trustedProxies, p)
+			}
+		}
+	}
+
+	rawAllowedOrigins := os.Getenv("ALLOWED_ORIGINS")
+	var allowedOrigins []string
+	if rawAllowedOrigins != "" {
+		for _, o := range strings.Split(rawAllowedOrigins, ",") {
+			o = strings.TrimSpace(o)
+			if o != "" {
+				allowedOrigins = append(allowedOrigins, o)
 			}
 		}
 	}
@@ -266,6 +278,7 @@ func Load() *Config {
 		RateLimitMaxAttempts:   rateLimitMaxAttempts,
 		RateLimitWindowMinutes: rateLimitWindowMinutes,
 		TrustedProxies:         trustedProxies,
+		AllowedOrigins:         allowedOrigins,
 		Features:               features,
 	}
 }

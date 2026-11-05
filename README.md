@@ -148,6 +148,7 @@ MySSH is built with a zero-trust mindset:
 | `RATE_LIMIT_ENABLED` | `true` | Enable brute-force protection rate limiter |
 | `RATE_LIMIT_MAX_ATTEMPTS` | `5` | Maximum failed logins before temporary IP lockout |
 | `RATE_LIMIT_WINDOW_MINUTES` | `5` | Lockout window duration in minutes |
+| `ALLOWED_ORIGINS` | *(Localhost / Same-Origin)* | Comma-separated list of allowed CORS and WebSocket origins |
 
 ---
 
