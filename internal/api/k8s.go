@@ -495,6 +495,36 @@ func (h *K8sHandler) PodExec(c *gin.Context) {
 	container := c.Query("container")
 	shellCmd := c.DefaultQuery("command", "/bin/sh")
 
+	commands := strings.Fields(shellCmd)
+	if len(commands) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      "Command cannot be empty",
+			"error_code": "INVALID_COMMAND",
+		})
+		return
+	}
+
+	allowedShells := map[string]bool{
+		"/bin/sh":       true,
+		"/bin/bash":     true,
+		"/bin/ash":      true,
+		"/bin/zsh":      true,
+		"/usr/bin/sh":   true,
+		"/usr/bin/bash": true,
+		"sh":            true,
+		"bash":          true,
+		"ash":           true,
+		"zsh":           true,
+	}
+
+	if !allowedShells[commands[0]] {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":      fmt.Sprintf("Disallowed shell %q: interactive command must be an approved shell", commands[0]),
+			"error_code": "FORBIDDEN_SHELL",
+		})
+		return
+	}
+
 	_, cs, restConfig, err := h.getClusterClientset(clusterID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -519,7 +549,6 @@ func (h *K8sHandler) PodExec(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	commands := strings.Split(shellCmd, " ")
 	err = k8shub.HandlePodExec(cs, restConfig, ws, namespace, podName, container, commands)
 	if err != nil {
 		_ = ws.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("\r\n[Session ended: %v]\r\n", err)))

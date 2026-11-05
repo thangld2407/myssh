@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -152,5 +153,73 @@ func TestK8sClusterAndPortForwardCRUD(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Expected 200 OK on delete cluster, got %d", w.Code)
+	}
+}
+
+func TestPodExec_SanitizationAndShellWhitelist(t *testing.T) {
+	setupTestDB(t)
+
+	cfg := &config.Config{
+		MasterKey: "test-master-key-32-bytes-long!!",
+	}
+	handler := NewK8sHandler(cfg)
+
+	r := gin.New()
+	r.GET("/api/k8s/clusters/:id/pods/:name/exec", handler.PodExec)
+
+	// Test 1: Arbitrary unapproved commands must be rejected with 400 and FORBIDDEN_SHELL
+	disallowedCommands := []string{
+		"curl http://evil.com",
+		"rm -rf /",
+		"cat /etc/shadow",
+		"python -c 'import pty; pty.spawn(\"/bin/sh\")'",
+		"/usr/bin/python3",
+		"netcat -lvnp 4444",
+	}
+
+	for _, cmd := range disallowedCommands {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/api/k8s/clusters/cls-1/pods/pod-1/exec?command="+url.QueryEscape(cmd), nil)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Expected 400 Bad Request for disallowed command %q, got %d", cmd, w.Code)
+		}
+		var resp map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		if resp["error_code"] != "FORBIDDEN_SHELL" {
+			t.Errorf("Expected FORBIDDEN_SHELL for command %q, got %v", cmd, resp["error_code"])
+		}
+	}
+
+	// Test 2: Consecutive spaces with invalid shell or empty command
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/k8s/clusters/cls-1/pods/pod-1/exec?command=   ", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for whitespace command, got %d", w.Code)
+	}
+
+	// Test 3: Approved shells (/bin/sh, /bin/bash, sh, bash) pass whitelist
+	// (they will fail subsequently at cluster lookup since cls-nonexistent does not exist, but NOT with FORBIDDEN_SHELL)
+	allowedCommands := []string{
+		"/bin/sh",
+		"/bin/bash",
+		"sh",
+		"bash",
+		"/bin/ash",
+		"ash",
+	}
+
+	for _, cmd := range allowedCommands {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/api/k8s/clusters/cls-nonexistent/pods/pod-1/exec?command="+cmd, nil)
+		r.ServeHTTP(w, req)
+
+		var resp map[string]interface{}
+		json.Unmarshal(w.Body.Bytes(), &resp)
+		if resp["error_code"] == "FORBIDDEN_SHELL" {
+			t.Errorf("Approved shell %q was incorrectly rejected with FORBIDDEN_SHELL", cmd)
+		}
 	}
 }
