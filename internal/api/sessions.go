@@ -23,6 +23,16 @@ func (h *SessionHandler) List(c *gin.Context) {
 	var sessions []db.Session
 	query := db.DB.Preload("User").Order("started_at desc")
 
+	// Ownership scoping: Non-admin users can only view their own sessions
+	roleVal, _ := c.Get("role")
+	roleStr, _ := roleVal.(string)
+	if !strings.EqualFold(roleStr, "admin") {
+		userIDVal, _ := c.Get("user_id")
+		if userIDStr, ok := userIDVal.(string); ok && userIDStr != "" {
+			query = query.Where("user_id = ?", userIDStr)
+		}
+	}
+
 	if hostID := c.Query("host_id"); hostID != "" {
 		query = query.Where("host_id = ?", hostID)
 	}

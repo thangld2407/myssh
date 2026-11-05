@@ -117,93 +117,93 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected.POST("/auth/2fa/disable", authHandler.Disable2FA)
 
 		// Credentials
-		protected.GET("/credentials", credHandler.List)
-		protected.POST("/credentials", credHandler.Create)
-		protected.DELETE("/credentials/:id", credHandler.Delete)
-		protected.POST("/credentials/generate-key", credHandler.GenerateKey)
+		protected.GET("/credentials", middleware.RequireRole("admin", "member", "viewer"), credHandler.List)
+		protected.POST("/credentials", middleware.RequireRole("admin"), credHandler.Create)
+		protected.DELETE("/credentials/:id", middleware.RequireRole("admin"), credHandler.Delete)
+		protected.POST("/credentials/generate-key", middleware.RequireRole("admin"), credHandler.GenerateKey)
 
 		// Hosts
-		protected.GET("/hosts", hostHandler.List)
-		protected.POST("/hosts", hostHandler.Create)
-		protected.POST("/hosts/import", featureGuard(cfg.Features.EnableImportSSHConfig, "Import SSH Config"), hostHandler.ImportSSHConfig)
-		protected.GET("/hosts/:id", hostHandler.Get)
-		protected.PUT("/hosts/:id", hostHandler.Update)
-		protected.DELETE("/hosts/:id", hostHandler.Delete)
-		protected.POST("/hosts/:id/test", hostHandler.TestConnection)
-		protected.POST("/hosts/:id/reset-fingerprint", hostHandler.ResetFingerprint)
-		protected.GET("/hosts/:id/metrics", hostHandler.GetMetrics)
+		protected.GET("/hosts", middleware.RequireRole("admin", "member", "viewer"), hostHandler.List)
+		protected.POST("/hosts", middleware.RequireRole("admin"), hostHandler.Create)
+		protected.POST("/hosts/import", middleware.RequireRole("admin"), featureGuard(cfg.Features.EnableImportSSHConfig, "Import SSH Config"), hostHandler.ImportSSHConfig)
+		protected.GET("/hosts/:id", middleware.RequireRole("admin", "member", "viewer"), hostHandler.Get)
+		protected.PUT("/hosts/:id", middleware.RequireRole("admin"), hostHandler.Update)
+		protected.DELETE("/hosts/:id", middleware.RequireRole("admin"), hostHandler.Delete)
+		protected.POST("/hosts/:id/test", middleware.RequireRole("admin", "member"), hostHandler.TestConnection)
+		protected.POST("/hosts/:id/reset-fingerprint", middleware.RequireRole("admin"), hostHandler.ResetFingerprint)
+		protected.GET("/hosts/:id/metrics", middleware.RequireRole("admin", "member", "viewer"), hostHandler.GetMetrics)
 
 		// Terminal WebSocket
-		protected.GET("/ws/terminal/:host_id", termHandler.Connect)
+		protected.GET("/ws/terminal/:host_id", middleware.RequireRole("admin", "member"), termHandler.Connect)
 
 		// SFTP
 		sftp := protected.Group("/sftp", featureGuard(cfg.Features.EnableSFTP, "SFTP File Explorer"))
 		{
-			sftp.GET("/:host_id/list", sftpHandler.List)
-			sftp.GET("/:host_id/read", sftpHandler.Read)
-			sftp.POST("/:host_id/write", sftpHandler.Write)
-			sftp.GET("/:host_id/download", sftpHandler.Download)
-			sftp.POST("/:host_id/upload", sftpHandler.Upload)
-			sftp.POST("/:host_id/mkdir", sftpHandler.Mkdir)
-			sftp.DELETE("/:host_id/delete", sftpHandler.Delete)
+			sftp.GET("/:host_id/list", middleware.RequireRole("admin", "member"), sftpHandler.List)
+			sftp.GET("/:host_id/read", middleware.RequireRole("admin", "member"), sftpHandler.Read)
+			sftp.POST("/:host_id/write", middleware.RequireRole("admin", "member"), sftpHandler.Write)
+			sftp.GET("/:host_id/download", middleware.RequireRole("admin", "member"), sftpHandler.Download)
+			sftp.POST("/:host_id/upload", middleware.RequireRole("admin", "member"), sftpHandler.Upload)
+			sftp.POST("/:host_id/mkdir", middleware.RequireRole("admin", "member"), sftpHandler.Mkdir)
+			sftp.DELETE("/:host_id/delete", middleware.RequireRole("admin", "member"), sftpHandler.Delete)
 		}
 
 		// Snippets & Quick Commands
 		snippets := protected.Group("/snippets", featureGuard(cfg.Features.EnableSnippets, "DevOps Snippets"))
 		{
-			snippets.GET("", snipHandler.List)
-			snippets.POST("", snipHandler.Create)
-			snippets.PUT("/:id", snipHandler.Update)
-			snippets.DELETE("/:id", snipHandler.Delete)
+			snippets.GET("", middleware.RequireRole("admin", "member", "viewer"), snipHandler.List)
+			snippets.POST("", middleware.RequireRole("admin", "member"), snipHandler.Create)
+			snippets.PUT("/:id", middleware.RequireRole("admin", "member"), snipHandler.Update)
+			snippets.DELETE("/:id", middleware.RequireRole("admin", "member"), snipHandler.Delete)
 		}
 
 		// Audit Sessions
 		audit := protected.Group("/audit", featureGuard(cfg.Features.EnableSessionAudit, "Session Audit Logs"))
 		{
-			audit.GET("/sessions", sessHandler.List)
-			audit.GET("/sessions/:id/recording", sessHandler.GetRecording)
+			audit.GET("/sessions", middleware.RequireRole("admin", "member", "viewer"), sessHandler.List)
+			audit.GET("/sessions/:id/recording", middleware.RequireRole("admin", "member", "viewer"), sessHandler.GetRecording)
 		}
 
 		// Tunnels
 		tunnels := protected.Group("/tunnels", featureGuard(cfg.Features.EnableTunnels, "Port Forwarding & Tunnels"))
 		{
-			tunnels.GET("", tunnHandler.List)
-			tunnels.POST("", tunnHandler.Create)
-			tunnels.POST("/:id/start", tunnHandler.Start)
-			tunnels.POST("/:id/stop", tunnHandler.Stop)
-			tunnels.DELETE("/:id", tunnHandler.Delete)
+			tunnels.GET("", middleware.RequireRole("admin", "member"), tunnHandler.List)
+			tunnels.POST("", middleware.RequireRole("admin"), tunnHandler.Create)
+			tunnels.POST("/:id/start", middleware.RequireRole("admin"), tunnHandler.Start)
+			tunnels.POST("/:id/stop", middleware.RequireRole("admin"), tunnHandler.Stop)
+			tunnels.DELETE("/:id", middleware.RequireRole("admin"), tunnHandler.Delete)
 		}
 
 		// Kubernetes Hub
 		k8s := protected.Group("/k8s", featureGuard(cfg.Features.EnableK8s, "Kubernetes Manager"))
 		{
-			k8s.GET("/clusters", k8sHandler.ListClusters)
-			k8s.POST("/clusters", k8sHandler.CreateCluster)
-			k8s.POST("/clusters/test", k8sHandler.TestCluster)
-			k8s.GET("/clusters/:id", k8sHandler.GetCluster)
-			k8s.PUT("/clusters/:id", k8sHandler.UpdateCluster)
-			k8s.DELETE("/clusters/:id", k8sHandler.DeleteCluster)
+			k8s.GET("/clusters", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListClusters)
+			k8s.POST("/clusters", middleware.RequireRole("admin"), k8sHandler.CreateCluster)
+			k8s.POST("/clusters/test", middleware.RequireRole("admin"), k8sHandler.TestCluster)
+			k8s.GET("/clusters/:id", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.GetCluster)
+			k8s.PUT("/clusters/:id", middleware.RequireRole("admin"), k8sHandler.UpdateCluster)
+			k8s.DELETE("/clusters/:id", middleware.RequireRole("admin"), k8sHandler.DeleteCluster)
 
 			// Resources
-			k8s.GET("/clusters/:id/namespaces", k8sHandler.ListNamespaces)
-			k8s.GET("/clusters/:id/nodes", k8sHandler.ListNodes)
-			k8s.GET("/clusters/:id/pods", k8sHandler.ListPods)
-			k8s.GET("/clusters/:id/deployments", k8sHandler.ListDeployments)
-			k8s.GET("/clusters/:id/services", k8sHandler.ListServices)
-			k8s.GET("/clusters/:id/yaml", k8sHandler.GetYAML)
-			k8s.PUT("/clusters/:id/yaml", k8sHandler.ApplyYAML)
-			k8s.DELETE("/clusters/:id/resource", k8sHandler.DeleteResource)
+			k8s.GET("/clusters/:id/namespaces", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListNamespaces)
+			k8s.GET("/clusters/:id/nodes", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListNodes)
+			k8s.GET("/clusters/:id/pods", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListPods)
+			k8s.GET("/clusters/:id/deployments", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListDeployments)
+			k8s.GET("/clusters/:id/services", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListServices)
+			k8s.GET("/clusters/:id/yaml", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.GetYAML)
+			k8s.PUT("/clusters/:id/yaml", middleware.RequireRole("admin"), k8sHandler.ApplyYAML)
+			k8s.DELETE("/clusters/:id/resource", middleware.RequireRole("admin"), k8sHandler.DeleteResource)
 
 			// Pod logs & exec
-			k8s.GET("/clusters/:id/pods/:name/logs", k8sHandler.GetPodLogs)
-			k8s.GET("/clusters/:id/pods/:name/exec", k8sHandler.PodExec)
+			k8s.GET("/clusters/:id/pods/:name/logs", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.GetPodLogs)
+			k8s.GET("/clusters/:id/pods/:name/exec", middleware.RequireRole("admin", "member"), k8sHandler.PodExec)
 
 			// Port forwarding
-			k8s.GET("/portforwards", k8sHandler.ListPortForwards)
-			k8s.POST("/portforwards", k8sHandler.CreatePortForward)
-			k8s.POST("/portforwards/:id/start", k8sHandler.StartPortForward)
-			k8s.POST("/portforwards/:id/stop", k8sHandler.StopPortForward)
-			k8s.DELETE("/portforwards/:id", k8sHandler.DeletePortForward)
+			k8s.GET("/portforwards", middleware.RequireRole("admin", "member", "viewer"), k8sHandler.ListPortForwards)
+			k8s.POST("/portforwards", middleware.RequireRole("admin"), k8sHandler.CreatePortForward)
+			k8s.POST("/portforwards/:id/start", middleware.RequireRole("admin"), k8sHandler.StartPortForward)
+			k8s.POST("/portforwards/:id/stop", middleware.RequireRole("admin"), k8sHandler.StopPortForward)
+			k8s.DELETE("/portforwards/:id", middleware.RequireRole("admin"), k8sHandler.DeletePortForward)
 		}
 	}
 

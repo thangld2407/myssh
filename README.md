@@ -123,6 +123,11 @@ MySSH is built with a zero-trust mindset:
    * **RFC 6238 TOTP Two-Factor Authentication** with Google Authenticator and Authy.
    * Sliding-window IP rate limiting (defaults to 5 attempts per 5-minute window) to block brute-force attacks.
 4. **Transport Security:** Ephemeral JWT authentication over encrypted WebSocket and TLS.
+5. **Role-Based Access Control (RBAC) & Ownership:**
+   * **Admin**: Full authority to mutate credentials, hosts, tunnels, and execute destructive operations on Kubernetes clusters.
+   * **Member**: Standard operational access (Terminal, SFTP, Snippets, Pod Exec, read-only telemetry).
+   * **Viewer**: Read-only observation of server fleet, metrics, logs, and audit records.
+   * *Shared vs. Scoped Assets*: By design, Hosts and Credentials act as shared infrastructure assets across team bastions, whereas Sessions and Tunnels are scoped strictly to the creating user account (unless queried by an administrator).
 
 ---
 

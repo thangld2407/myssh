@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"sync"
@@ -191,5 +192,27 @@ func AuthMiddleware(secret string) gin.HandlerFunc {
 		c.Set("role", claims.Role)
 		c.Set("jwt_claims", claims)
 		c.Next()
+	}
+}
+
+// RequireRole enforces role-based access control (RBAC).
+// Returns 403 Forbidden if user role is not in the allowed list.
+func RequireRole(allowedRoles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		roleVal, exists := c.Get("role")
+		if !exists {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Access denied: missing role claim"})
+			return
+		}
+		userRole, _ := roleVal.(string)
+		for _, allowed := range allowedRoles {
+			if strings.EqualFold(userRole, allowed) {
+				c.Next()
+				return
+			}
+		}
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+			"error": fmt.Sprintf("Access denied: role '%s' does not have permission to access this resource", userRole),
+		})
 	}
 }

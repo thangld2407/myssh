@@ -48,7 +48,19 @@ type CreateTunnelRequest struct {
 
 func (h *TunnelHandler) List(c *gin.Context) {
 	var tunnels []db.Tunnel
-	if err := db.DB.Preload("Host").Order("created_at desc").Find(&tunnels).Error; err != nil {
+	query := db.DB.Preload("Host").Order("created_at desc")
+
+	// Ownership scoping: Non-admin users can only view their own tunnels
+	roleVal, _ := c.Get("role")
+	roleStr, _ := roleVal.(string)
+	if !strings.EqualFold(roleStr, "admin") {
+		userIDVal, _ := c.Get("user_id")
+		if userIDStr, ok := userIDVal.(string); ok && userIDStr != "" {
+			query = query.Where("user_id = ?", userIDStr)
+		}
+	}
+
+	if err := query.Find(&tunnels).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query tunnels"})
 		return
 	}
