@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -331,5 +332,64 @@ func TestTwoFactorAuthFlow(t *testing.T) {
 	_ = json.Unmarshal(w.Body.Bytes(), &directRes)
 	if _, hasToken := directRes["token"]; !hasToken {
 		t.Errorf("Expected token directly without 2FA prompt")
+	}
+}
+
+func TestLoginRateLimit_AccountLockoutBypassesSpoofedIP(t *testing.T) {
+	setupTestDB(t)
+
+	// Create a target user
+	user := db.User{
+		ID:           "test-lockout-uid",
+		Username:     "targetuser",
+		PasswordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy", // bcrypt for "correctpass"
+		Role:         "admin",
+	}
+	db.DB.Create(&user)
+
+	cfg := &config.Config{
+		JWTSecret:              "test-jwt-secret-xyz",
+		RateLimitEnabled:       true,
+		RateLimitMaxAttempts:   5,
+		RateLimitWindowMinutes: 5,
+	}
+	handler := NewAuthHandler(cfg)
+
+	r := gin.New()
+	_ = r.SetTrustedProxies(nil)
+	r.POST("/api/auth/login", handler.Login)
+
+	// Attempts 1 to 5: Different spoofed IP addresses, same target username, wrong password
+	for i := 1; i <= 5; i++ {
+		loginBody, _ := json.Marshal(map[string]string{
+			"username": "targetuser",
+			"password": "wrong-password",
+		})
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(loginBody))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("X-Forwarded-For", fmt.Sprintf("203.0.113.%d", i))
+		req.RemoteAddr = fmt.Sprintf("203.0.113.%d:4321", i)
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusUnauthorized {
+			t.Fatalf("Attempt %d should return 401 Unauthorized, got %d: %s", i, w.Code, w.Body.String())
+		}
+	}
+
+	// Attempt 6: 6th different IP, same username -> MUST be locked out with 429 Too Many Requests
+	loginBody, _ := json.Marshal(map[string]string{
+		"username": "targetuser",
+		"password": "wrong-password",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(loginBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", "203.0.113.99")
+	req.RemoteAddr = "203.0.113.99:4321"
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("Attempt 6 must be blocked with 429 Too Many Requests, got %d: %s", w.Code, w.Body.String())
 	}
 }

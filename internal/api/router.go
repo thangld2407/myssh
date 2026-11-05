@@ -17,6 +17,14 @@ import (
 func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.Default()
 
+	// Trusted Proxies: default nil (trust no reverse proxies / ignore spoofed X-Forwarded-For)
+	// unless explicitly configured via TRUSTED_PROXIES
+	if cfg != nil && len(cfg.TrustedProxies) > 0 {
+		_ = r.SetTrustedProxies(cfg.TrustedProxies)
+	} else {
+		_ = r.SetTrustedProxies(nil)
+	}
+
 	// CORS Setup
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"*"},

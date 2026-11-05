@@ -39,6 +39,7 @@ type Config struct {
 	RateLimitEnabled       bool         `json:"rate_limit_enabled"`
 	RateLimitMaxAttempts   int          `json:"rate_limit_max_attempts"`
 	RateLimitWindowMinutes int          `json:"rate_limit_window_minutes"`
+	TrustedProxies         []string     `json:"trusted_proxies,omitempty"`
 	Features               FeatureFlags `json:"features"`
 }
 
@@ -129,6 +130,17 @@ func Load() *Config {
 	rateLimitEnabled := getEnvBool("RATE_LIMIT_ENABLED", true)
 	rateLimitMaxAttempts := getEnvInt("RATE_LIMIT_MAX_ATTEMPTS", 5)
 	rateLimitWindowMinutes := getEnvInt("RATE_LIMIT_WINDOW_MINUTES", 5)
+
+	rawTrustedProxies := os.Getenv("TRUSTED_PROXIES")
+	var trustedProxies []string
+	if rawTrustedProxies != "" {
+		for _, p := range strings.Split(rawTrustedProxies, ",") {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				trustedProxies = append(trustedProxies, p)
+			}
+		}
+	}
 
 	features := FeatureFlags{
 		EnableSFTP:            getEnvBool("FEATURE_SFTP", true),
@@ -239,6 +251,7 @@ func Load() *Config {
 		RateLimitEnabled:       rateLimitEnabled,
 		RateLimitMaxAttempts:   rateLimitMaxAttempts,
 		RateLimitWindowMinutes: rateLimitWindowMinutes,
+		TrustedProxies:         trustedProxies,
 		Features:               features,
 	}
 }

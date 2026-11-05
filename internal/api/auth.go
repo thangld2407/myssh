@@ -24,12 +24,14 @@ type failedAttempt struct {
 	lastTried time.Time
 }
 
+const maxAttemptsMapSize = 10000
+
 var (
 	loginAttempts   = make(map[string]*failedAttempt)
 	loginAttemptsMu sync.Mutex
 )
 
-func checkRateLimit(cfg *config.Config, ip string) error {
+func checkRateLimit(cfg *config.Config, key string) error {
 	if cfg != nil && !cfg.RateLimitEnabled {
 		return nil
 	}
@@ -47,20 +49,13 @@ func checkRateLimit(cfg *config.Config, ip string) error {
 		}
 	}
 
-	// Periodic cleanup of stale attempts (older than 2x window)
-	for ipKey, att := range loginAttempts {
-		if time.Since(att.lastTried) > 2*window {
-			delete(loginAttempts, ipKey)
-		}
-	}
-
-	attempt, exists := loginAttempts[ip]
+	attempt, exists := loginAttempts[key]
 	if !exists {
 		return nil
 	}
 
 	if time.Since(attempt.lastTried) > window {
-		delete(loginAttempts, ip)
+		delete(loginAttempts, key)
 		return nil
 	}
 
@@ -71,7 +66,7 @@ func checkRateLimit(cfg *config.Config, ip string) error {
 	return nil
 }
 
-func recordFailedAttempt(cfg *config.Config, ip string) {
+func recordFailedAttempt(cfg *config.Config, key string) {
 	if cfg != nil && !cfg.RateLimitEnabled {
 		return
 	}
@@ -83,19 +78,41 @@ func recordFailedAttempt(cfg *config.Config, ip string) {
 		window = time.Duration(cfg.RateLimitWindowMinutes) * time.Minute
 	}
 
-	attempt, exists := loginAttempts[ip]
+	// Evict stale or oldest entries if map exceeds capacity
+	if len(loginAttempts) >= maxAttemptsMapSize {
+		for k, att := range loginAttempts {
+			if time.Since(att.lastTried) > window {
+				delete(loginAttempts, k)
+			}
+		}
+		if len(loginAttempts) >= maxAttemptsMapSize {
+			var oldestKey string
+			var oldestTime time.Time
+			for k, att := range loginAttempts {
+				if oldestKey == "" || att.lastTried.Before(oldestTime) {
+					oldestKey = k
+					oldestTime = att.lastTried
+				}
+			}
+			if oldestKey != "" {
+				delete(loginAttempts, oldestKey)
+			}
+		}
+	}
+
+	attempt, exists := loginAttempts[key]
 	if !exists || time.Since(attempt.lastTried) > window {
-		loginAttempts[ip] = &failedAttempt{count: 1, lastTried: time.Now()}
+		loginAttempts[key] = &failedAttempt{count: 1, lastTried: time.Now()}
 		return
 	}
 	attempt.count++
 	attempt.lastTried = time.Now()
 }
 
-func clearFailedAttempt(ip string) {
+func clearFailedAttempt(key string) {
 	loginAttemptsMu.Lock()
 	defer loginAttemptsMu.Unlock()
-	delete(loginAttempts, ip)
+	delete(loginAttempts, key)
 }
 
 type AuthHandler struct {
@@ -191,7 +208,8 @@ type LoginRequest struct {
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	clientIP := c.ClientIP()
-	if err := checkRateLimit(h.cfg, clientIP); err != nil {
+	ipKey := "ip:" + clientIP
+	if err := checkRateLimit(h.cfg, ipKey); err != nil {
 		c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
 		return
 	}
@@ -202,16 +220,27 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 	req.Username = strings.TrimSpace(req.Username)
+	userKey := "user:" + strings.ToLower(req.Username)
+
+	// Check Account / Username rate limit (locks out brute-force across arbitrary/spoofed IPs)
+	if req.Username != "" {
+		if err := checkRateLimit(h.cfg, userKey); err != nil {
+			c.JSON(http.StatusTooManyRequests, gin.H{"error": err.Error()})
+			return
+		}
+	}
 
 	var user db.User
 	if err := db.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
-		recordFailedAttempt(h.cfg, clientIP)
+		recordFailedAttempt(h.cfg, ipKey)
+		recordFailedAttempt(h.cfg, userKey)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tên đăng nhập hoặc mật khẩu không chính xác"})
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		recordFailedAttempt(h.cfg, clientIP)
+		recordFailedAttempt(h.cfg, ipKey)
+		recordFailedAttempt(h.cfg, userKey)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Tên đăng nhập hoặc mật khẩu không chính xác"})
 		return
 	}
@@ -228,13 +257,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		}
 
 		if !totp.Validate(code, user.TwoFactorSecret) {
-			recordFailedAttempt(h.cfg, clientIP)
+			recordFailedAttempt(h.cfg, ipKey)
+			recordFailedAttempt(h.cfg, userKey)
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Mã xác thực 2FA không chính xác hoặc đã hết hạn"})
 			return
 		}
 	}
 
-	clearFailedAttempt(clientIP)
+	clearFailedAttempt(ipKey)
+	clearFailedAttempt(userKey)
 
 	token, err := middleware.GenerateToken(&user, h.cfg.JWTSecret)
 	if err != nil {
