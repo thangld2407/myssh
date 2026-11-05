@@ -158,13 +158,11 @@ make build
 
 ---
 
-## ❤️ Sponsor & Build in Public
+## ⭐️ Community & Star
 
-MySSH is 100% free and open-source software built for the developer and sysadmin community. If MySSH saves you from paying monthly recurring fees for Termius or license fees for MobaXterm, please consider supporting the project:
+MySSH is 100% free and open-source software built for developers, homelab enthusiasts, and system administrators.
 
-- ⭐️ **Star the repository:** Give us a star on [GitHub](https://github.com/thangld2407/myssh) to boost visibility!
-- 💖 **GitHub Sponsors:** [github.com/sponsors](https://github.com/sponsors)
-- ☕ **Buy Me a Coffee:** [buymeacoffee.com](https://buymeacoffee.com)
+If you find MySSH useful, please consider giving the project a ⭐️ on [GitHub](https://github.com/thangld2407/myssh) and sharing it with your friends!
 
 ---
 
