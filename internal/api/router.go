@@ -96,11 +96,6 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			c.JSON(200, gin.H{
 				"version":  "1.1.0",
 				"features": cfg.Features,
-				"rate_limit": gin.H{
-					"enabled":        cfg.RateLimitEnabled,
-					"max_attempts":   cfg.RateLimitMaxAttempts,
-					"window_minutes": cfg.RateLimitWindowMinutes,
-				},
 			})
 		})
 		api.GET("/auth/setup-status", authHandler.SetupStatus)
