@@ -3,6 +3,8 @@ package api
 import (
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/myssh/myssh/internal/config"
@@ -46,12 +48,20 @@ func (h *SessionHandler) GetRecording(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(session.RecordingPath); os.IsNotExist(err) {
+	cleanPath := filepath.Clean(session.RecordingPath)
+	cleanDir := filepath.Clean(h.cfg.RecordingsDir)
+	rel, err := filepath.Rel(cleanDir, cleanPath)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied: invalid recording file path"})
+		return
+	}
+
+	if _, err := os.Stat(cleanPath); os.IsNotExist(err) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Recording file on disk no longer exists"})
 		return
 	}
 
 	c.Header("Content-Type", "application/x-asciicast; charset=utf-8")
 	c.Header("Content-Disposition", "inline; filename="+id+".cast")
-	c.File(session.RecordingPath)
+	c.File(cleanPath)
 }

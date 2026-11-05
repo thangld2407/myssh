@@ -5,7 +5,8 @@
 [![xterm.js](https://img.shields.io/badge/xterm.js-5.5-red?style=flat)](https://xtermjs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Security: AES-256-GCM](https://img.shields.io/badge/Vault-AES--256--GCM-green.svg)](#security--cryptography)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat&logo=docker)](Dockerfile)
+[![2FA: TOTP](https://img.shields.io/badge/2FA-TOTP%20Ready-blue.svg)](#two-factor-authentication)
+[![Docker](https://img.shields.io/badge/Docker-Multi--Arch-2496ED?style=flat&logo=docker)](Dockerfile)
 
 > ⚡ **A lightweight, open-source, web-native alternative to MobaXterm and Termius.**  
 > Access SSH terminals, manage files with split-screen SFTP, broadcast commands across multiple servers, and audit sessions right from any modern web browser on Mac, Windows, Linux, and iPad.
@@ -32,41 +33,66 @@
 - 💻 **Web Interactive Terminal:** Shell Linux/BSD thời gian thực mượt mà qua trình duyệt (`xterm.js` + WebSocket). Hỗ trợ đổi kích thước PTY linh hoạt, đa tab (Multi-tab) mở nhiều máy chủ đồng thời.
 - ⚡ **Multi-Host Broadcast Terminal (Multi-Exec):** Chọn hàng loạt máy chủ và gõ một câu lệnh để broadcast thực thi đồng thời trên tất cả các server, hiển thị kết quả trực quan dạng chia lưới (Grid View).
 - 📂 **Split-Screen SFTP Explorer:** Mở cây thư mục SFTP chạy song song bên cạnh Terminal trong cùng 1 tab như MobaXterm. Hỗ trợ kéo thả, upload, download, tạo thư mục và xóa tệp an toàn.
+- 📝 **SFTP Inline Code & Text Editor:** Mở xem và soạn thảo trực tiếp các file cấu hình và mã nguồn (`.conf`, `.sh`, `.env`, `.py`, `.yaml`, `.json`...) từ xa với phím tắt `Ctrl+S` lưu đè trực tiếp lên server, hiển thị số dòng và nhận diện định dạng tệp.
+- ⚡ **DevOps Snippet & Dynamic Command Library:** Quản lý kho câu lệnh mẫu có tham số động `{{VARIABLE}}` (Docker cleanup, open ports, system status, logs), hỗ trợ phân loại theo thư mục, tags và 1-click bắn lệnh vào terminal đang chạy.
 - 🪄 **1-Click OpenSSH / MobaXterm Importer:** Kéo thả hoặc dán trực tiếp file `~/.ssh/config` để tự động bóc tách Host, Port, User, ProxyJump và nhập hàng loạt vào hệ thống.
 - 🔐 **Zero-Trust Credential Vault:** Bảo vệ SSH Private Keys (RSA, Ed25519) và mật khẩu bằng thuật toán mã hóa **AES-256-GCM** với khóa dẫn xuất **Argon2id**.
 - 🔑 **Ed25519 Key Generator:** Tự động sinh cặp khóa SSH Ed25519 một chạm trực tiếp trên giao diện và sao chép Public Key vào clipboard.
 - 🎥 **Session Audit & Web Player:** Ghi hình toàn bộ I/O phiên làm việc theo chuẩn **Asciinema v2 (`.cast`)** và cung cấp Web Player xem lại với tốc độ 1x, 2x, 4x phục vụ kiểm toán an toàn thông tin.
 - 🔀 **SSH Port Forwarding & Tunnels:** Thiết lập và quản lý Local Port Forwarding và Dynamic SOCKS5 Proxy trực quan.
+- 🛡️ **Two-Factor Authentication (2FA / TOTP):** Tích hợp bảo mật hai lớp chuẩn RFC 6238 tương thích Google Authenticator, Authy, Apple Passwords kèm mã QR 1-chạm kích hoạt, bảo vệ tuyệt đối khi expose máy chủ ra ngoài Internet.
 - 🛡️ **First-Run Setup Wizard:** Không chứa mật khẩu mặc định hardcoded! Khi khởi chạy lần đầu, wizard bảo mật yêu cầu người dùng tự đặt mật khẩu quản trị mạnh và tích hợp bộ đếm giới hạn tần suất (Rate Limiting) chống Brute-force.
 
 ---
 
-## ⚡ Cài đặt nhanh trong 1 dòng lệnh (1-Liner Quick Install)
+## ⚡ Cài đặt nhanh (Quickstart)
 
-### Cách 1: Chạy trực tiếp lệnh Curl Installer (Linux / macOS VPS)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/myssh/myssh/main/scripts/install.sh | bash
-```
-
-### Cách 2: Sử dụng Docker Compose
+### Cách 1: Chạy Docker Container (Khuyên Dùng - Nhanh Nhất)
 
 ```bash
-# Clone dự án
-git clone https://github.com/myssh/myssh.git
-cd MySSH
-
-# Khởi chạy dịch vụ
-docker compose up -d
+docker run -d \
+  --name myssh \
+  -p 8080:8080 \
+  -v myssh_data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/myssh/myssh:latest
 ```
-Truy cập giao diện tại: **`http://localhost:8080`**
+Truy cập ngay tại: **`http://localhost:8080`**
+
+### Cách 2: Chạy Single Binary (Không cần Docker, chỉ 1 file nhị phân 26MB)
+
+Tải file nhị phân phù hợp với hệ điều hành từ [GitHub Releases](https://github.com/myssh/myssh/releases):
+
+```bash
+# Ví dụ trên Linux AMD64:
+curl -LO https://github.com/myssh/myssh/releases/latest/download/myssh-linux-amd64.tar.gz
+tar -xzf myssh-linux-amd64.tar.gz
+./myssh
+```
 
 ### Cách 3: Docker Compose kèm Tự Động Cấp SSL HTTPS (Caddy)
 
 ```bash
 DOMAIN=bastion.yourdomain.com docker compose -f docker-compose.production.yml up -d
 ```
-Caddy sẽ tự động đăng ký chứng chỉ SSL Let's Encrypt và kích hoạt HTTPS cho domain của bạn.
+
+### Cách 4: Kết nối an toàn không cần mở port (Cloudflare Tunnel & Tailscale)
+
+Khuyên dùng kết hợp với **Cloudflare Zero Trust Tunnel** hoặc **Tailscale**:
+1. Giữ MySSH bind tại `127.0.0.1:8080`.
+2. Tạo Cloudflare Tunnel trỏ về `localhost:8080` với WAF rule và Cloudflare Access email PIN.
+3. Không cần mở bất kỳ cổng nào (Port 80/443) trên router gia đình hoặc VPS.
+
+> 📖 Xem hướng dẫn thiết lập chi tiết tại: [Tài liệu Triển khai Thực chiến (Deployment Guide)](docs/DEPLOYMENT_GUIDE.md)
+
+---
+
+## 📚 Tài Liệu Hướng Dẫn (Documentation)
+
+- 🚀 [Community Launch Playbook & Marketing Templates](docs/COMMUNITY_LAUNCH_PLAYBOOK.md): Kịch bản phát hành, video demo script và mẫu bài đăng (J2TEAM, Reddit, Hacker News).
+- 🛠️ [Production Deployment Guide](docs/DEPLOYMENT_GUIDE.md): Caddy SSL, Cloudflare Tunnel, Tailscale, Systemd và quy trình Backup & Restore.
+- 🏗️ [System Architecture](docs/ARCHITECTURE.md): Kiến trúc hệ thống, luồng PTY WebSocket và mô hình mã hóa Zero-Trust.
+- 🛡️ [Security Audit & Cryptography Report](docs/SECURITY_AUDIT.md): Báo cáo kiểm toán bảo mật, AES-256-GCM, Argon2id và 2FA.
 
 ---
 

@@ -73,6 +73,9 @@ func (h *HostHandler) Create(c *gin.Context) {
 
 	if req.Port <= 0 {
 		req.Port = 22
+	} else if req.Port > 65535 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Port must be between 1 and 65535"})
+		return
 	}
 	if req.Folder == "" {
 		req.Folder = "General"
@@ -118,9 +121,17 @@ func (h *HostHandler) Update(c *gin.Context) {
 
 	if req.Port <= 0 {
 		req.Port = 22
+	} else if req.Port > 65535 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Port must be between 1 and 65535"})
+		return
 	}
 	if req.Folder == "" {
 		req.Folder = "General"
+	}
+
+	if req.JumpHostID != "" && req.JumpHostID == id {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "A host cannot use itself as a Jump Host"})
+		return
 	}
 
 	host.Name = req.Name

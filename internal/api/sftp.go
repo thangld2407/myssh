@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
@@ -86,7 +87,7 @@ func (h *SFTPHandler) Download(c *gin.Context) {
 	}
 	defer reader.Close()
 
-	filename := filepath.Base(remotePath)
+	filename := path.Base(remotePath)
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
 	c.Header("Content-Length", fmt.Sprintf("%d", size))
 	c.Header("Content-Type", "application/octet-stream")
@@ -119,7 +120,7 @@ func (h *SFTPHandler) Upload(c *gin.Context) {
 	defer bridge.Close()
 
 	cleanFilename := filepath.Base(fileHeader.Filename)
-	remotePath := filepath.Join(targetDir, cleanFilename)
+	remotePath := path.Join(targetDir, cleanFilename)
 	if err := bridge.UploadFile(remotePath, srcFile); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -177,4 +178,69 @@ func (h *SFTPHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Item deleted successfully"})
+}
+
+const maxEditableFileSize = 5 * 1024 * 1024 // 5MB limit for inline text editor
+
+func (h *SFTPHandler) Read(c *gin.Context) {
+	hostID := c.Param("host_id")
+	remotePath := c.Query("path")
+	if remotePath == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "path query parameter is required"})
+		return
+	}
+
+	bridge, err := h.getBridge(c, hostID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer bridge.Close()
+
+	content, err := bridge.ReadFile(remotePath, maxEditableFileSize)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"path":    remotePath,
+		"content": string(content),
+		"size":    len(content),
+	})
+}
+
+func (h *SFTPHandler) Write(c *gin.Context) {
+	hostID := c.Param("host_id")
+	var req struct {
+		Path    string `json:"path" binding:"required"`
+		Content string `json:"content"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if int64(len(req.Content)) > maxEditableFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "content exceeds maximum allowable size (5MB)"})
+		return
+	}
+
+	bridge, err := h.getBridge(c, hostID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer bridge.Close()
+
+	if err := bridge.WriteFile(req.Path, []byte(req.Content)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "File saved successfully",
+		"path":    req.Path,
+		"size":    len(req.Content),
+	})
 }

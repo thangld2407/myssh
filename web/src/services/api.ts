@@ -31,7 +31,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers,
   });
 
-  if (res.status === 401) {
+  if (res.status === 401 && !endpoint.startsWith('/auth/login')) {
     clearAuthToken();
     window.location.reload();
     throw new Error('Unauthorized');
@@ -62,19 +62,33 @@ export const api = {
   // System Config & Features
   getSystemFeatures: () => request<SystemFeaturesResponse>('/system/features'),
 
-  // Auth
+  // Auth & 2FA
   getSetupStatus: () => request<{ initialized: boolean }>('/auth/setup-status'),
   setupAdmin: (data: { username: string; password: string; full_name?: string }) =>
     request<{ token: string; user: User }>('/auth/setup', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  login: (data: { username: string; password: string }) =>
-    request<{ token: string; user: User }>('/auth/login', {
+  login: (data: { username: string; password: string; code?: string }) =>
+    request<{ token?: string; user?: User; two_factor_required?: boolean; message?: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
   getMe: () => request<User>('/auth/me'),
+  generate2FA: () =>
+    request<{ secret: string; otpauth_url: string; qr_code: string }>('/auth/2fa/generate', {
+      method: 'POST',
+    }),
+  enable2FA: (data: { secret: string; code: string }) =>
+    request<{ success: boolean; message: string }>('/auth/2fa/enable', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  disable2FA: (data: { password: string }) =>
+    request<{ success: boolean; message: string }>('/auth/2fa/disable', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 
   // Credentials
   getCredentials: () => request<Credential[]>('/credentials'),

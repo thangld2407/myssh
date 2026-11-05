@@ -3,7 +3,7 @@ package sshhub
 import (
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 	"time"
 
 	"github.com/pkg/sftp"
@@ -63,7 +63,7 @@ func (s *SFTPBridge) ListDir(dirPath string) ([]FileItem, error) {
 
 	var items []FileItem
 	for _, entry := range entries {
-		itemPath := filepath.Join(dirPath, entry.Name())
+		itemPath := path.Join(dirPath, entry.Name())
 		items = append(items, FileItem{
 			Name:    entry.Name(),
 			Path:    itemPath,
@@ -93,7 +93,7 @@ func (s *SFTPBridge) DownloadFile(remotePath string) (io.ReadCloser, int64, erro
 }
 
 func (s *SFTPBridge) UploadFile(remotePath string, src io.Reader) error {
-	remoteDir := filepath.Dir(remotePath)
+	remoteDir := path.Dir(remotePath)
 	_ = s.sftpClient.MkdirAll(remoteDir)
 
 	dstFile, err := s.sftpClient.Create(remotePath)
@@ -127,4 +127,40 @@ func (s *SFTPBridge) Remove(remotePath string) error {
 
 func (s *SFTPBridge) Rename(oldPath, newPath string) error {
 	return s.sftpClient.Rename(oldPath, newPath)
+}
+
+func (s *SFTPBridge) ReadFile(remotePath string, maxBytes int64) ([]byte, error) {
+	file, err := s.sftpClient.Open(remotePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open remote file: %w", err)
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat remote file: %w", err)
+	}
+
+	if maxBytes > 0 && stat.Size() > maxBytes {
+		return nil, fmt.Errorf("file size (%d bytes) exceeds maximum editable limit (%d bytes)", stat.Size(), maxBytes)
+	}
+
+	return io.ReadAll(io.LimitReader(file, maxBytes+1))
+}
+
+func (s *SFTPBridge) WriteFile(remotePath string, data []byte) error {
+	remoteDir := path.Dir(remotePath)
+	_ = s.sftpClient.MkdirAll(remoteDir)
+
+	dstFile, err := s.sftpClient.Create(remotePath)
+	if err != nil {
+		return fmt.Errorf("failed to open/create remote file for writing: %w", err)
+	}
+	defer dstFile.Close()
+
+	if _, err := dstFile.Write(data); err != nil {
+		return fmt.Errorf("failed to write remote file content: %w", err)
+	}
+
+	return nil
 }

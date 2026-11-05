@@ -83,22 +83,38 @@ func HandleTerminalSession(
 	}
 	if err := session.RequestPty("xterm-256color", initialRows, initialCols, modes); err != nil {
 		_ = ws.WriteMessage(websocket.TextMessage, []byte("\r\n\x1b[31m[MySSH Error] Failed to request PTY: "+err.Error()+"\x1b[0m\r\n"))
+		sessionRecord.Status = "failed"
+		now := time.Now()
+		sessionRecord.EndedAt = &now
+		db.DB.Save(sessionRecord)
 		return
 	}
 
 	stdinPipe, err := session.StdinPipe()
 	if err != nil {
+		sessionRecord.Status = "failed"
+		now := time.Now()
+		sessionRecord.EndedAt = &now
+		db.DB.Save(sessionRecord)
 		return
 	}
 	defer stdinPipe.Close()
 
 	stdoutPipe, err := session.StdoutPipe()
 	if err != nil {
+		sessionRecord.Status = "failed"
+		now := time.Now()
+		sessionRecord.EndedAt = &now
+		db.DB.Save(sessionRecord)
 		return
 	}
 
 	stderrPipe, err := session.StderrPipe()
 	if err != nil {
+		sessionRecord.Status = "failed"
+		now := time.Now()
+		sessionRecord.EndedAt = &now
+		db.DB.Save(sessionRecord)
 		return
 	}
 
@@ -112,6 +128,10 @@ func HandleTerminalSession(
 	// 5. Start remote shell
 	if err := session.Shell(); err != nil {
 		_ = ws.WriteMessage(websocket.TextMessage, []byte("\r\n\x1b[31m[MySSH Error] Failed to start shell: "+err.Error()+"\x1b[0m\r\n"))
+		sessionRecord.Status = "failed"
+		now := time.Now()
+		sessionRecord.EndedAt = &now
+		db.DB.Save(sessionRecord)
 		return
 	}
 

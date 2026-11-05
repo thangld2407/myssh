@@ -5,13 +5,15 @@ import (
 )
 
 type User struct {
-	ID           string    `gorm:"primaryKey;size:36" json:"id"`
-	Username     string    `gorm:"uniqueIndex;size:64;not null" json:"username"`
-	PasswordHash string    `gorm:"size:255;not null" json:"-"`
-	FullName     string    `gorm:"size:128" json:"full_name"`
-	Role         string    `gorm:"size:32;default:'admin'" json:"role"` // admin, member, viewer
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                string    `gorm:"primaryKey;size:36" json:"id"`
+	Username          string    `gorm:"uniqueIndex;size:64;not null" json:"username"`
+	PasswordHash      string    `gorm:"size:255;not null" json:"-"`
+	FullName          string    `gorm:"size:128" json:"full_name"`
+	Role              string    `gorm:"size:32;default:'admin'" json:"role"` // admin, member, viewer
+	TwoFactorEnabled  bool      `gorm:"default:false" json:"two_factor_enabled"`
+	TwoFactorSecret   string    `gorm:"size:128" json:"-"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
 }
 
 type Credential struct {
@@ -72,4 +74,16 @@ type Tunnel struct {
 	Status     string    `gorm:"size:32;default:'stopped'" json:"status"` // running, stopped, error
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type Snippet struct {
+	ID          string    `gorm:"primaryKey;size:36" json:"id"`
+	UserID      string    `gorm:"size:36;index" json:"user_id"`
+	Name        string    `gorm:"size:128;not null" json:"name"`
+	Command     string    `gorm:"type:text;not null" json:"command"`
+	Description string    `gorm:"type:text" json:"description"`
+	Category    string    `gorm:"size:64;default:'General'" json:"category"`
+	Tags        string    `gorm:"size:255" json:"tags"` // Comma-separated tags
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }

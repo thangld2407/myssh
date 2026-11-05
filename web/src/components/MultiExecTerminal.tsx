@@ -85,6 +85,7 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?token=${token}`;
 
     const ws = new WebSocket(wsUrl);
+    ws.binaryType = 'arraybuffer';
 
     ws.onopen = () => {
       setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'connected' }));
@@ -95,7 +96,11 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     };
 
     ws.onmessage = (event) => {
-      term.write(event.data);
+      if (typeof event.data === 'string') {
+        term.write(event.data);
+      } else {
+        term.write(new Uint8Array(event.data));
+      }
       if (term.buffer.active.baseY - term.buffer.active.viewportY <= 2) {
         term.scrollToBottom();
       }

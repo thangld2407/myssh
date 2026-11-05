@@ -46,7 +46,6 @@ RUN addgroup -S myssh && adduser -S myssh -G myssh
 WORKDIR /app
 
 COPY --from=backend-builder /app/bin/myssh /app/myssh
-COPY --from=backend-builder /app/web/dist /app/web/dist
 
 # Create persistent data volume directory
 RUN mkdir -p /app/data /app/data/recordings && \

@@ -23,6 +23,10 @@ func NewTerminalHandler(cfg *config.Config) *TerminalHandler {
 func (h *TerminalHandler) Connect(c *gin.Context) {
 	hostID := c.Param("host_id")
 	userID, _ := c.Get("user_id")
+	userIDStr, _ := userID.(string)
+	if userIDStr == "" {
+		userIDStr = "system"
+	}
 
 	var host db.Host
 	if err := db.DB.Preload("Credential").First(&host, "id = ?", hostID).Error; err != nil {
@@ -47,7 +51,7 @@ func (h *TerminalHandler) Connect(c *gin.Context) {
 
 	sessionRecord := db.Session{
 		ID:        uuid.New().String(),
-		UserID:    userID.(string),
+		UserID:    userIDStr,
 		HostID:    host.ID,
 		HostName:  host.Name,
 		Status:    "connecting",

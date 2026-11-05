@@ -8,7 +8,8 @@ interface AuthContextType {
   isLoading: boolean;
   isInitialized: boolean;
   setup: (username: string, password: string, fullName?: string) => Promise<void>;
-  login: (username: string, password: string) => Promise<void>;
+  login: (username: string, password: string, code?: string) => Promise<{ two_factor_required?: boolean }>;
+  refreshUser: () => Promise<void>;
   logout: () => void;
 }
 
@@ -18,7 +19,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   isInitialized: true,
   setup: async () => {},
-  login: async () => {},
+  login: async () => ({}),
+  refreshUser: async () => {},
   logout: () => {},
 });
 
@@ -26,6 +28,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(true);
+
+  const refreshUser = async () => {
+    try {
+      const userData = await api.getMe();
+      setUser(userData);
+    } catch {
+      // Ignored
+    }
+  };
 
   useEffect(() => {
     // 1. Check if server needs first-run setup
@@ -70,10 +81,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsInitialized(true);
   };
 
-  const login = async (username: string, password: string) => {
-    const res = await api.login({ username, password });
-    setAuthToken(res.token);
-    setUser(res.user);
+  const login = async (username: string, password: string, code?: string): Promise<{ two_factor_required?: boolean }> => {
+    const res = await api.login({ username, password, code });
+    if (res.two_factor_required) {
+      return { two_factor_required: true };
+    }
+    if (res.token && res.user) {
+      setAuthToken(res.token);
+      setUser(res.user);
+    }
+    return {};
   };
 
   const logout = () => {
@@ -91,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isInitialized,
         setup,
         login,
+        refreshUser,
         logout,
       }}
     >

@@ -50,9 +50,24 @@ func (h *TunnelHandler) List(c *gin.Context) {
 
 func (h *TunnelHandler) Create(c *gin.Context) {
 	userID, _ := c.Get("user_id")
+	userIDStr, _ := userID.(string)
+	if userIDStr == "" {
+		userIDStr = "system"
+	}
+
 	var req CreateTunnelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if req.BindPort < 1 || req.BindPort > 65535 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid bind_port, must be between 1 and 65535"})
+		return
+	}
+
+	if req.Type == "local" && (req.TargetPort < 1 || req.TargetPort > 65535) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid target_port, must be between 1 and 65535"})
 		return
 	}
 
@@ -65,7 +80,7 @@ func (h *TunnelHandler) Create(c *gin.Context) {
 
 	tunnel := db.Tunnel{
 		ID:         uuid.New().String(),
-		UserID:     userID.(string),
+		UserID:     userIDStr,
 		HostID:     req.HostID,
 		Name:       req.Name,
 		Type:       req.Type,

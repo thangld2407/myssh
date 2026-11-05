@@ -1,0 +1,78 @@
+name: Release Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build & Release Single Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Build Web Frontend Assets
+        run: |
+          cd web
+          pnpm install
+          pnpm build
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Compile Cross-Platform Binaries
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          mkdir -p dist_binaries
+          
+          # Linux AMD64
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist_binaries/myssh ./cmd/server
+          tar -czvf dist_binaries/myssh-${TAG}-linux-amd64.tar.gz -C dist_binaries myssh
+          rm dist_binaries/myssh
+
+          # Linux ARM64 (Raspberry Pi, ARM Cloud)
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist_binaries/myssh ./cmd/server
+          tar -czvf dist_binaries/myssh-${TAG}-linux-arm64.tar.gz -C dist_binaries myssh
+          rm dist_binaries/myssh
+
+          # Darwin ARM64 (Apple Silicon M1/M2/M3/M4)
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist_binaries/myssh ./cmd/server
+          tar -czvf dist_binaries/myssh-${TAG}-darwin-arm64.tar.gz -C dist_binaries myssh
+          rm dist_binaries/myssh
+
+          # Darwin AMD64 (Intel Mac)
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist_binaries/myssh ./cmd/server
+          tar -czvf dist_binaries/myssh-${TAG}-darwin-amd64.tar.gz -C dist_binaries myssh
+          rm dist_binaries/myssh
+
+          # Windows AMD64
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist_binaries/myssh.exe ./cmd/server
+          zip -j dist_binaries/myssh-${TAG}-windows-amd64.zip dist_binaries/myssh.exe
+          rm dist_binaries/myssh.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist_binaries/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

@@ -11,7 +11,8 @@ data/recordings/*
 # Node & Frontend
 node_modules/
 web/node_modules/
-web/dist/
+web/dist/*
+!web/dist/.gitkeep
 web/.pnpm-store/
 
 # Secrets & Environment variables
@@ -28,5 +29,6 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+.claude/
 *.sublime-project
 *.sublime-workspace

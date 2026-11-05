@@ -1,7 +1,10 @@
 package api
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
+	"image/png"
 	"net/http"
 	"strings"
 	"sync"
@@ -12,6 +15,7 @@ import (
 	"github.com/myssh/myssh/internal/config"
 	"github.com/myssh/myssh/internal/db"
 	"github.com/myssh/myssh/internal/middleware"
+	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -182,6 +186,7 @@ func (h *AuthHandler) Setup(c *gin.Context) {
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+	Code     string `json:"code"`
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
@@ -211,6 +216,24 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	// Kiểm tra nếu tài khoản kích hoạt 2FA
+	if user.TwoFactorEnabled {
+		code := strings.TrimSpace(req.Code)
+		if code == "" {
+			c.JSON(http.StatusOK, gin.H{
+				"two_factor_required": true,
+				"message":             "Vui lòng nhập mã xác thực hai yếu tố (2FA)",
+			})
+			return
+		}
+
+		if !totp.Validate(code, user.TwoFactorSecret) {
+			recordFailedAttempt(h.cfg, clientIP)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Mã xác thực 2FA không chính xác hoặc đã hết hạn"})
+			return
+		}
+	}
+
 	clearFailedAttempt(clientIP)
 
 	token, err := middleware.GenerateToken(&user, h.cfg.JWTSecret)
@@ -222,10 +245,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
 		"user": gin.H{
-			"id":        user.ID,
-			"username":  user.Username,
-			"full_name": user.FullName,
-			"role":      user.Role,
+			"id":                 user.ID,
+			"username":           user.Username,
+			"full_name":          user.FullName,
+			"role":               user.Role,
+			"two_factor_enabled": user.TwoFactorEnabled,
 		},
 	})
 }
@@ -240,9 +264,129 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"id":        user.ID,
-		"username":  user.Username,
-		"full_name": user.FullName,
-		"role":      user.Role,
+		"id":                 user.ID,
+		"username":           user.Username,
+		"full_name":          user.FullName,
+		"role":               user.Role,
+		"two_factor_enabled": user.TwoFactorEnabled,
+	})
+}
+
+// Generate2FA tạo Secret Key và QR Code cho ứng dụng Google Authenticator / Authy
+func (h *AuthHandler) Generate2FA(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+
+	var user db.User
+	if err := db.DB.First(&user, "id = ?", userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Người dùng không tồn tại"})
+		return
+	}
+
+	key, err := totp.Generate(totp.GenerateOpts{
+		Issuer:      "MySSH Bastion",
+		AccountName: user.Username,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể sinh mã 2FA: " + err.Error()})
+		return
+	}
+
+	var buf bytes.Buffer
+	var qrDataURL string
+	img, err := key.Image(220, 220)
+	if err == nil && img != nil {
+		if err := png.Encode(&buf, img); err == nil {
+			qrDataURL = "data:image/png;base64," + base64.StdEncoding.EncodeToString(buf.Bytes())
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"secret":      key.Secret(),
+		"otpauth_url": key.URL(),
+		"qr_code":     qrDataURL,
+	})
+}
+
+type Enable2FARequest struct {
+	Secret string `json:"secret" binding:"required"`
+	Code   string `json:"code" binding:"required"`
+}
+
+// Enable2FA kiểm tra mã 6 số đầu tiên và kích hoạt 2FA cho tài khoản
+func (h *AuthHandler) Enable2FA(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+
+	var req Enable2FARequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dữ liệu kích hoạt 2FA không hợp lệ"})
+		return
+	}
+
+	var user db.User
+	if err := db.DB.First(&user, "id = ?", userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Người dùng không tồn tại"})
+		return
+	}
+
+	cleanSecret := strings.TrimSpace(req.Secret)
+	cleanCode := strings.TrimSpace(req.Code)
+
+	if !totp.Validate(cleanCode, cleanSecret) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Mã xác thực 2FA không chính xác hoặc đã hết hạn"})
+		return
+	}
+
+	user.TwoFactorEnabled = true
+	user.TwoFactorSecret = cleanSecret
+	user.UpdatedAt = time.Now()
+
+	if err := db.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể cập nhật cấu hình bảo mật: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Xác thực hai yếu tố (2FA) đã được kích hoạt thành công",
+	})
+}
+
+type Disable2FARequest struct {
+	Password string `json:"password" binding:"required"`
+}
+
+// Disable2FA tắt 2FA khi có xác nhận mật khẩu tài khoản
+func (h *AuthHandler) Disable2FA(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+
+	var req Disable2FARequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Vui lòng nhập mật khẩu xác nhận"})
+		return
+	}
+
+	var user db.User
+	if err := db.DB.First(&user, "id = ?", userID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Người dùng không tồn tại"})
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Mật khẩu xác nhận không chính xác"})
+		return
+	}
+
+	user.TwoFactorEnabled = false
+	user.TwoFactorSecret = ""
+	user.UpdatedAt = time.Now()
+
+	if err := db.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Không thể tắt 2FA: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Đã tắt xác thực hai yếu tố (2FA) thành công",
 	})
 }

@@ -11,7 +11,8 @@ import {
   Search,
   Star,
   ExternalLink,
-  Palette
+  Palette,
+  ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -22,6 +23,7 @@ interface NavbarProps {
   onOpenTabsClick: () => void;
   onOpenCommandPalette: () => void;
   onOpenSponsor: () => void;
+  onOpenSecurity: () => void;
   theme: string;
   onToggleTheme: () => void;
 }
@@ -33,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenTabsClick,
   onOpenCommandPalette,
   onOpenSponsor,
+  onOpenSecurity,
   theme,
   onToggleTheme,
 }) => {
@@ -168,6 +171,22 @@ export const Navbar: React.FC<NavbarProps> = ({
           title={`Theme hiện tại: ${theme.toUpperCase()} (Nhấp để đổi)`}
         >
           <Palette className="w-4 h-4" />
+        </button>
+
+        {/* Security & 2FA Setup */}
+        <button
+          onClick={onOpenSecurity}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition text-xs font-mono ${
+            user?.two_factor_enabled
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+              : 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+          }`}
+          title="Bảo mật tài khoản & Xác thực hai yếu tố (2FA)"
+        >
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span className="hidden md:inline text-[11px] font-medium">
+            {user?.two_factor_enabled ? '2FA: Bật' : '2FA: Chưa Bật'}
+          </span>
         </button>
 
         {/* User Badge */}

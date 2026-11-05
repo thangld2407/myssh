@@ -13,10 +13,25 @@ import {
   X,
   AlertCircle,
   Search,
-  HardDrive
+  HardDrive,
+  Edit3
 } from 'lucide-react';
 import { Host, FileItem } from '../types';
 import { api } from '../services/api';
+import { FileEditorModal } from './FileEditorModal';
+
+const isTextFile = (fileName: string): boolean => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || '';
+  const textExtensions = [
+    'txt', 'sh', 'bash', 'zsh', 'conf', 'cfg', 'cnf', 'ini', 'env',
+    'json', 'yaml', 'yml', 'toml', 'xml', 'md', 'markdown',
+    'js', 'jsx', 'ts', 'tsx', 'mjs', 'cjs',
+    'py', 'rb', 'php', 'go', 'rs', 'c', 'cpp', 'h', 'hpp',
+    'html', 'htm', 'css', 'scss', 'sass', 'less',
+    'sql', 'log', 'service', 'properties', 'dockerfile', 'makefile'
+  ];
+  return textExtensions.includes(ext) || fileName.toLowerCase() === 'dockerfile' || fileName.toLowerCase() === 'makefile' || fileName.startsWith('.');
+};
 
 interface SftpPanelProps {
   host: Host;
@@ -33,6 +48,7 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
   const [uploading, setUploading] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [editingFile, setEditingFile] = useState<FileItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadDirectory = async (path: string) => {
@@ -70,6 +86,8 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
   const handleItemClick = (item: FileItem) => {
     if (item.is_dir) {
       loadDirectory(item.path);
+    } else if (isTextFile(item.name)) {
+      setEditingFile(item);
     }
   };
 
@@ -125,7 +143,7 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
   };
 
   const formatSize = (bytes: number) => {
-    if (bytes === 0) return '-';
+    if (!bytes || bytes <= 0) return '-';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -269,6 +287,18 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
                 {!isEmbedded && <td className="py-2 text-slate-400 text-xs">{item.mode}</td>}
                 <td className="py-2 text-right pr-3">
                   <div className="flex items-center justify-end space-x-1 opacity-60 group-hover:opacity-100">
+                    {!item.is_dir && isTextFile(item.name) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingFile(item);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-90 transition"
+                        title="Chỉnh sửa tệp"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                     {!item.is_dir && (
                       <button
                         onClick={(e) => {
@@ -337,6 +367,16 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
             </div>
           </form>
         </div>
+      )}
+
+      {/* Inline File Editor Modal */}
+      {editingFile && (
+        <FileEditorModal
+          host={host}
+          fileItem={editingFile}
+          onClose={() => setEditingFile(null)}
+          onSaved={() => loadDirectory(currentPath)}
+        />
       )}
     </div>
   );

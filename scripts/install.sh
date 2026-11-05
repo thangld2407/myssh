@@ -54,7 +54,7 @@ if command -v docker &> /dev/null; then
     echo -e "\n${GREEN}================================================================${NC}"
     echo -e "${GREEN}🎉 Cài đặt MySSH thành công!${NC}"
     echo -e "Truy cập ngay: ${BLUE}http://localhost:8080${NC} hoặc IP máy chủ của bạn."
-    echo -e "Tài khoản mặc định: ${YELLOW}admin${NC} / Mật khẩu: ${YELLOW}admin123${NC}"
+    echo -e "Khởi tạo tài khoản: ${YELLOW}Truy cập web để tự đặt mật khẩu quản trị viên an toàn (Setup Wizard)${NC}"
     echo -e "${GREEN}================================================================${NC}\n"
     exit 0
   fi
@@ -116,5 +116,5 @@ fi
 echo -e "\n${GREEN}================================================================${NC}"
 echo -e "${GREEN}🎉 Cài đặt MySSH hoàn tất!${NC}"
 echo -e "Truy cập giao diện tại: ${BLUE}http://localhost:8080${NC}"
-echo -e "Tài khoản khởi tạo: ${YELLOW}admin${NC} / Mật khẩu: ${YELLOW}admin123${NC}"
+echo -e "Khởi tạo tài khoản: ${YELLOW}Truy cập web để tự đặt mật khẩu quản trị viên an toàn (Setup Wizard)${NC}"
 echo -e "${GREEN}================================================================${NC}\n"

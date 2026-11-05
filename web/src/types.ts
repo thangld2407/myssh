@@ -3,6 +3,7 @@ export interface User {
   username: string;
   full_name: string;
   role: string;
+  two_factor_enabled?: boolean;
 }
 
 export interface Credential {

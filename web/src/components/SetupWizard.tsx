@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Terminal, Shield, ArrowRight, CheckCircle2, Lock, KeyRound, Sparkles, AlertCircle } from 'lucide-react';
+import { Terminal, Shield, ArrowRight, CheckCircle2, Lock, KeyRound, Sparkles, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const SetupWizard: React.FC = () => {
@@ -8,8 +8,13 @@ export const SetupWizard: React.FC = () => {
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Field validation
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const getPasswordStrength = (pass: string) => {
     if (!pass) return 0;
@@ -23,9 +28,18 @@ export const SetupWizard: React.FC = () => {
 
   const strength = getPasswordStrength(password);
 
+  const isPasswordShort = password.length > 0 && password.length < 8;
+  const isMismatch = confirmPassword.length > 0 && password !== confirmPassword;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setTouched({ username: true, password: true, confirmPassword: true });
+
+    if (!username.trim()) {
+      setError('Vui lòng nhập tên tài khoản Admin.');
+      return;
+    }
 
     if (password.length < 8) {
       setError('Mật khẩu quản trị phải có độ dài ít nhất 8 ký tự.');
@@ -57,23 +71,23 @@ export const SetupWizard: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-900 tracking-tight">First-Run Setup Wizard</h1>
+              <h1 className="text-base font-bold text-slate-900 tracking-tight">Khởi Tạo Hệ Thống</h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-semibold">
-                v1.0 Public
+                Setup Wizard
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-normal">Khởi tạo tài khoản Quản trị viên Master</p>
+            <p className="text-xs text-slate-500 font-normal">Thiết lập tài khoản Quản trị viên Master an toàn</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-medium flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Họ và tên người quản trị
@@ -93,26 +107,59 @@ export const SetupWizard: React.FC = () => {
             </label>
             <input
               type="text"
-              required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+              onBlur={() => setTouched((p) => ({ ...p, username: true }))}
               placeholder="admin"
-              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
+              className={`w-full h-10 px-3.5 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition font-mono ${
+                touched.username && !username.trim()
+                  ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                  : 'border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900'
+              }`}
             />
+            {touched.username && !username.trim() && (
+              <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>Vui lòng nhập tên tài khoản Admin.</span>
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Mật khẩu quản trị mới <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tối thiểu 8 ký tự..."
-              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => setTouched((p) => ({ ...p, password: true }))}
+                placeholder="Tối thiểu 8 ký tự..."
+                className={`w-full h-10 pl-3.5 pr-10 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition font-mono ${
+                  touched.password && isPasswordShort
+                    ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                    : 'border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {/* Password Validation warning */}
+            {touched.password && isPasswordShort && (
+              <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>Mật khẩu phải có tối thiểu 8 ký tự.</span>
+              </p>
+            )}
+
             {/* Strength bar */}
             {password.length > 0 && (
               <div className="mt-2 space-y-1">
@@ -131,7 +178,7 @@ export const SetupWizard: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                  <span>Độ mạnh mật khẩu</span>
+                  <span>Độ phức tạp</span>
                   <span className="font-semibold">
                     {strength <= 25 ? 'Yếu' : strength <= 50 ? 'Trung bình' : strength <= 75 ? 'Khá' : 'Mạnh'}
                   </span>
@@ -144,14 +191,35 @@ export const SetupWizard: React.FC = () => {
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Xác nhận mật khẩu <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="password"
-              required
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Nhập lại mật khẩu..."
-              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition font-mono"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                onBlur={() => setTouched((p) => ({ ...p, confirmPassword: true }))}
+                placeholder="Nhập lại mật khẩu..."
+                className={`w-full h-10 pl-3.5 pr-10 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition font-mono ${
+                  touched.confirmPassword && isMismatch
+                    ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
+                    : 'border-slate-200 focus:border-slate-900 focus:ring-1 focus:ring-slate-900'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 transition"
+                tabIndex={-1}
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {touched.confirmPassword && isMismatch && (
+              <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1">
+                <AlertCircle className="w-3 h-3 shrink-0" />
+                <span>Mật khẩu xác nhận không khớp.</span>
+              </p>
+            )}
           </div>
 
           <button
@@ -159,8 +227,17 @@ export const SetupWizard: React.FC = () => {
             disabled={submitting}
             className="w-full h-10 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center justify-center gap-2 transition shadow-xs disabled:opacity-50 mt-3"
           >
-            {submitting ? 'Đang tạo môi trường...' : 'Hoàn tất thiết lập & Khởi động'}
-            <ArrowRight className="w-4 h-4" />
+            {submitting ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Đang khởi tạo hệ thống...</span>
+              </>
+            ) : (
+              <>
+                <span>Hoàn tất thiết lập & Khởi động</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 

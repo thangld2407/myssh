@@ -41,6 +41,22 @@ export const RoadmapView: React.FC<RoadmapViewProps> = ({ onOpenSponsor }) => {
       status: 'completed',
     },
     {
+      id: 'r-inline-editor',
+      title: 'SFTP Inline Code & Text Editor',
+      desc: 'Mở xem và soạn thảo trực tiếp file cấu hình/code (.conf, .sh, .env, .py, .yaml) với phím tắt Ctrl+S lưu thẳng về server',
+      votes: 210,
+      tags: ['SFTP', 'Editor', 'UX'],
+      status: 'completed',
+    },
+    {
+      id: 'r-snippets',
+      title: 'DevOps Snippet & Dynamic Command Library',
+      desc: 'Kho câu lệnh mẫu DevOps có tham số động {{VAR}}, phân loại danh mục và 1-click bắn lệnh vào terminal',
+      votes: 198,
+      tags: ['Productivity', 'DevOps'],
+      status: 'completed',
+    },
+    {
       id: 'r-4',
       title: 'AI Shell Copilot & Command Intelligence',
       desc: 'Tích hợp AI giải thích câu lệnh terminal, cảnh báo lệnh nguy hiểm (rm -rf /) và gợi ý cú pháp',
