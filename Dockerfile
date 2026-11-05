@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Build Frontend SPA
 # ==========================================
-FROM node:20-alpine AS frontend-builder
+FROM node:20-alpine3.20 AS frontend-builder
 WORKDIR /web
 
 # Enable corepack for pnpm 9
@@ -16,7 +16,7 @@ RUN pnpm build
 # ==========================================
 # Stage 2: Build Backend Binary
 # ==========================================
-FROM golang:1.26-alpine AS backend-builder
+FROM golang:1.26-alpine3.20 AS backend-builder
 WORKDIR /app
 
 # Install git and ca-certificates
@@ -35,10 +35,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/bin/myssh ./cmd/s
 # ==========================================
 # Stage 3: Minimal Production Image
 # ==========================================
-FROM alpine:3.20
+FROM alpine:3.20.3
 LABEL maintainer="MySSH Team"
 
-RUN apk add --no-cache ca-certificates tzdata openssh-client
+RUN apk add --no-cache ca-certificates tzdata
 
 # Create non-root user
 RUN addgroup -S myssh && adduser -S myssh -G myssh
