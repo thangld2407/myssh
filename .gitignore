@@ -26,9 +26,12 @@ Thumbs.db
 *.swp
 *.swo
 
-# IDE
+# IDE & AI Assistant tooling
 .idea/
 .vscode/
 .claude/
 *.sublime-project
 *.sublime-workspace
+.agents/
+AGENTS.md
+docs/
