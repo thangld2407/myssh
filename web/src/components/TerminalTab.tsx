@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
-import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap } from 'lucide-react';
+import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap, Activity } from 'lucide-react';
 import { Host, FeatureFlags } from '../types';
 import { getAuthToken } from '../services/api';
 import { SftpPanel } from './SftpPanel';
 import { SnippetModal } from './SnippetModal';
+import { ServerMetricsOverlay } from './ServerMetricsOverlay';
 
 interface TerminalTabProps {
   host: Host;
@@ -26,6 +27,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
   const [sessionSeconds, setSessionSeconds] = useState<number>(0);
   const [showSplitSftp, setShowSplitSftp] = useState<boolean>(false);
   const [showSnippetModal, setShowSnippetModal] = useState<boolean>(false);
+  const [showMetrics, setShowMetrics] = useState<boolean>(true);
 
   const snippets = [
     { label: 'ls -la', cmd: 'ls -la\n' },
@@ -307,6 +309,23 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
 
         {/* Right Toolbar */}
         <div className="flex items-center space-x-2">
+          {/* Zero-Agent Live Telemetry Button */}
+          <button
+            onClick={() => {
+              setShowMetrics((prev) => !prev);
+              setTimeout(() => fitAddonInstance.current?.fit(), 60);
+            }}
+            className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-xs font-sans font-semibold transition active:scale-95 border ${
+              showMetrics
+                ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 shadow-2xs'
+            }`}
+            title="Bật/Tắt thanh thông số máy chủ thời gian thực (Zero-Agent Live Telemetry)"
+          >
+            <Activity className={`w-3.5 h-3.5 ${showMetrics ? 'text-emerald-400' : 'text-slate-500'}`} />
+            <span className="hidden sm:inline">Telemetry</span>
+          </button>
+
           {/* MobaXterm-style Split SFTP Button */}
           {features?.enable_sftp !== false && (
             <button
@@ -408,6 +427,16 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
           ))}
         </div>
       )}
+
+      {/* Zero-Agent Live Server Metrics Overlay */}
+      <ServerMetricsOverlay
+        hostId={host.id}
+        isVisible={showMetrics}
+        onToggleVisible={() => {
+          setShowMetrics(!showMetrics);
+          setTimeout(() => fitAddonInstance.current?.fit(), 60);
+        }}
+      />
 
       {/* Main Terminal View (Supports Split-View with Embedded SFTP) */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">

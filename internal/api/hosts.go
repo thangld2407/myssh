@@ -197,6 +197,37 @@ func (h *HostHandler) TestConnection(c *gin.Context) {
 	})
 }
 
+func (h *HostHandler) GetMetrics(c *gin.Context) {
+	id := c.Param("id")
+	var host db.Host
+	if err := db.DB.Preload("Credential").First(&host, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Host not found"})
+		return
+	}
+
+	info := sshhub.SSHConnectionInfo{
+		Host:      &host,
+		MasterKey: h.cfg.MasterKey,
+	}
+
+	if host.JumpHostID != "" {
+		var jumpHost db.Host
+		if err := db.DB.Preload("Credential").First(&jumpHost, "id = ?", host.JumpHostID).Error; err == nil {
+			info.JumpHost = &jumpHost
+		}
+	}
+
+	metrics, err := sshhub.CollectServerMetrics(info)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "Failed to collect server metrics: " + err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
 type ImportSSHConfigRequest struct {
 	Content             string `json:"content" binding:"required"`
 	DefaultCredentialID string `json:"default_credential_id"`

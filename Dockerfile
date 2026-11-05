@@ -4,11 +4,11 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /web
 
-# Enable corepack for pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Enable corepack for pnpm 9
+RUN corepack enable && corepack prepare pnpm@9 --activate
 
-COPY web/package.json ./
-RUN pnpm install --frozen-lockfile || pnpm install
+COPY web/package.json web/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 
 COPY web/ ./
 RUN pnpm build
@@ -16,7 +16,7 @@ RUN pnpm build
 # ==========================================
 # Stage 2: Build Backend Binary
 # ==========================================
-FROM golang:1.24-alpine AS backend-builder
+FROM golang:1.26-alpine AS backend-builder
 WORKDIR /app
 
 # Install git and ca-certificates

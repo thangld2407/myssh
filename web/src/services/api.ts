@@ -1,4 +1,4 @@
-import { Credential, Host, SessionAudit, Tunnel, FileItem, User, Snippet, SystemFeaturesResponse } from '../types';
+import { Credential, Host, SessionAudit, Tunnel, FileItem, User, Snippet, SystemFeaturesResponse, ServerMetrics } from '../types';
 
 const API_BASE = '/api';
 
@@ -139,6 +139,7 @@ export const api = {
     request<{ success: boolean; message: string }>(`/hosts/${id}/test`, {
       method: 'POST',
     }),
+  getHostMetrics: (id: string) => request<ServerMetrics>(`/hosts/${id}/metrics`),
   importSSHConfig: (data: {
     content: string;
     default_credential_id?: string;

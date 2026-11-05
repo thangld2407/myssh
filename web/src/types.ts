@@ -99,3 +99,23 @@ export interface SystemFeaturesResponse {
     window_minutes: number;
   };
 }
+
+export interface ServerMetrics {
+  os: string;
+  kernel: string;
+  arch: string;
+  uptime_sec: number;
+  uptime_text: string;
+  load_avg: string;
+  cpu_percent: number;
+  mem_total_mb: number;
+  mem_used_mb: number;
+  mem_free_mb: number;
+  mem_percent: number;
+  disk_total_gb: number;
+  disk_used_gb: number;
+  disk_free_gb: number;
+  disk_percent: number;
+  updated_at: string;
+}
+

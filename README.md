@@ -1,6 +1,6 @@
 # MySSH - The Modern Web-Native Bastion & Terminal Platform
 
-[![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=flat&logo=go)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.26%2B-00ADD8?style=flat&logo=go)](https://golang.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react)](https://react.dev)
 [![xterm.js](https://img.shields.io/badge/xterm.js-5.5-red?style=flat)](https://xtermjs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
@@ -33,6 +33,7 @@
 ## 🚀 Key Features
 
 - 💻 **Real-Time Interactive Web Terminal:** Hardware-accelerated terminal emulation in any browser powered by `xterm.js` and WebSocket PTY. Full 256-color and 24-bit truecolor support, smooth resize handling, and multi-tab concurrent server sessions.
+- 📊 **Zero-Agent Live Server Telemetry:** Instant live telemetry overlay directly on top of active terminal tabs without installing any daemon or agent on target servers. Real-time CPU usage, RAM free/used, root Disk (/), Load Averages, and Uptime with automated 5s/10s polling and compact/detailed modes.
 - ⚡ **Multi-Host Broadcast Terminal (Multi-Exec):** Select multiple servers and type once to broadcast commands across your entire fleet simultaneously with synchronized output in an adaptive Grid View.
 - 📂 **Split-Screen SFTP File Explorer:** Open a remote SFTP directory tree side-by-side with your active terminal session just like MobaXterm. Includes drag-and-drop file uploads, directory creation, downloads, and permission management.
 - 📝 **Inline Remote Code & Text Editor:** Inspect and edit configuration files (`.conf`, `.sh`, `.env`, `.py`, `.yaml`, `.json`) directly on remote hosts with line numbers, code syntax cues, and `Ctrl+S` / `Cmd+S` hotkeys to save directly over SFTP.
@@ -140,7 +141,7 @@ MySSH is built with a zero-trust mindset:
 ## 🧪 Testing & Local Development
 
 ### Prerequisites
-* Go 1.24+
+* Go 1.26+
 * Node.js 20+ & pnpm (only needed for frontend asset development)
 
 ```bash

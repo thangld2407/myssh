@@ -263,5 +263,25 @@
     "navigate": "Navigate",
     "select": "Select",
     "close": "Esc to close"
+  },
+  "metrics": {
+    "title": "Zero-Agent Live Telemetry",
+    "cpu": "CPU",
+    "memory": "RAM",
+    "disk": "Disk",
+    "load": "Load",
+    "uptime": "Uptime",
+    "os": "System",
+    "refresh": "Refresh Metrics",
+    "refreshing": "Probing...",
+    "autoRefresh": "Auto-refresh",
+    "paused": "Paused",
+    "every5s": "5s",
+    "every10s": "10s",
+    "hide": "Hide telemetry bar",
+    "show": "Show telemetry bar",
+    "compact": "Compact",
+    "detailed": "Detailed",
+    "error": "Failed to collect metrics"
   }
 }

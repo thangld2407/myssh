@@ -263,5 +263,25 @@
     "navigate": "Di chuyển",
     "select": "Chọn",
     "close": "Esc để đóng"
+  },
+  "metrics": {
+    "title": "Thông Số Máy Chủ (Zero-Agent)",
+    "cpu": "CPU",
+    "memory": "RAM",
+    "disk": "Ổ đĩa",
+    "load": "Load",
+    "uptime": "Uptime",
+    "os": "Hệ điều hành",
+    "refresh": "Làm mới thông số",
+    "refreshing": "Đang quét...",
+    "autoRefresh": "Tự động làm mới",
+    "paused": "Tạm dừng",
+    "every5s": "5s",
+    "every10s": "10s",
+    "hide": "Ẩn thanh thông số",
+    "show": "Hiện thanh thông số",
+    "compact": "Thu gọn",
+    "detailed": "Chi tiết",
+    "error": "Không thể lấy thông số"
   }
 }
