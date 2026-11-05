@@ -16,6 +16,9 @@ func main() {
 
 	// 1. Load Configuration
 	cfg := config.Load()
+	if err := cfg.EnsureDirs(); err != nil {
+		log.Fatalf("[Config] Failed to initialize storage directories: %v", err)
+	}
 	log.Printf("[Config] Port: %s | DB: %s | Data: %s\n", cfg.Port, cfg.DBPath, cfg.DataDir)
 
 	// 2. Initialize Database & Seed Default Admin

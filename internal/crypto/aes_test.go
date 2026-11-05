@@ -69,3 +69,44 @@ func TestDecryptTamperedData(t *testing.T) {
 		t.Fatalf("Expected decryption to fail with tampered data, but it succeeded")
 	}
 }
+
+func TestLegacySaltMigration(t *testing.T) {
+	// 1. Ensure we start with legacy salt
+	SetKDFSalt([]byte("myssh-secure-salt-v1"))
+	masterKey := "legacy-master-key-test"
+	plaintext := []byte("this was encrypted under the legacy fixed salt")
+
+	cipherB64, nonceB64, err := Encrypt(plaintext, masterKey)
+	if err != nil {
+		t.Fatalf("Encrypt failed: %v", err)
+	}
+
+	// 2. Change salt to a new random per-install salt
+	newSalt := []byte("random-new-salt-12345678")
+	SetKDFSalt(newSalt)
+	defer SetKDFSalt([]byte("myssh-secure-salt-v1")) // restore
+
+	// 3. Decrypt should successfully fall back to legacy salt!
+	decrypted, err := Decrypt(cipherB64, nonceB64, masterKey)
+	if err != nil {
+		t.Fatalf("Decrypt should fall back to legacy salt and succeed, got error: %v", err)
+	}
+	if !bytes.Equal(decrypted, plaintext) {
+		t.Fatalf("Decrypted mismatch: got %q, want %q", decrypted, plaintext)
+	}
+
+	// 4. Encrypt new data under new salt
+	newPlaintext := []byte("encrypted under new salt")
+	newCipher, newNonce, err := Encrypt(newPlaintext, masterKey)
+	if err != nil {
+		t.Fatalf("Encrypt with new salt failed: %v", err)
+	}
+
+	newDecrypted, err := Decrypt(newCipher, newNonce, masterKey)
+	if err != nil {
+		t.Fatalf("Decrypt with new salt failed: %v", err)
+	}
+	if !bytes.Equal(newDecrypted, newPlaintext) {
+		t.Fatalf("Decrypted mismatch: got %q, want %q", newDecrypted, newPlaintext)
+	}
+}

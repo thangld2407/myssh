@@ -2,10 +2,17 @@ package config
 
 import (
 	"bufio"
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/myssh/myssh/internal/crypto"
 )
 
 type FeatureFlags struct {
@@ -25,6 +32,7 @@ type Config struct {
 	DBPath                 string       `json:"db_path"`
 	JWTSecret              string       `json:"-"`
 	MasterKey              string       `json:"-"`
+	KDFSalt                []byte       `json:"-"`
 	RecordingsDir          string       `json:"recordings_dir"`
 	DataDir                string       `json:"data_dir"`
 	RateLimitEnabled       bool         `json:"rate_limit_enabled"`
@@ -33,14 +41,87 @@ type Config struct {
 	Features               FeatureFlags `json:"features"`
 }
 
-// Load reads .env if present and loads configuration from environment variables
+// EnsureDirs ensures that necessary runtime storage directories exist.
+func (c *Config) EnsureDirs() error {
+	if err := os.MkdirAll(c.DataDir, 0700); err != nil {
+		return err
+	}
+	if c.Features.EnableSessionAudit {
+		if err := os.MkdirAll(c.RecordingsDir, 0700); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// isSampleOrInsecureKey checks if a given secret is empty, a placeholder, or a known sample key.
+func isSampleOrInsecureKey(val string) bool {
+	v := strings.TrimSpace(val)
+	if v == "" {
+		return true
+	}
+	samples := []string{
+		"myssh-super-secret-jwt-key-2026",
+		"myssh-super-secret-jwt-key-change-me-in-production-2026",
+		"myssh-master-encryption-key-32b!",
+		"myssh-master-encryption-key-32b-change-me!",
+	}
+	for _, s := range samples {
+		if v == s {
+			return true
+		}
+	}
+	if strings.Contains(v, "__CHANGE_ME__") || strings.Contains(strings.ToLower(v), "change-me") {
+		return true
+	}
+	return false
+}
+
+// generateSecureRandomHex generates cryptographically secure random bytes and returns them as a hex string.
+func generateSecureRandomHex(n int) string {
+	b := make([]byte, n)
+	if _, err := io.ReadFull(rand.Reader, b); err != nil {
+		log.Fatalf("[Config] Failed to generate cryptographically secure random bytes: %v", err)
+	}
+	return hex.EncodeToString(b)
+}
+
+// loadSecretsFile reads key-value pairs from a .secrets file.
+func loadSecretsFile(filePath string) map[string]string {
+	secrets := make(map[string]string)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return secrets
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			k := strings.TrimSpace(parts[0])
+			v := strings.TrimSpace(parts[1])
+			if len(v) >= 2 && ((v[0] == '"' && v[len(v)-1] == '"') || (v[0] == '\'' && v[len(v)-1] == '\'')) {
+				v = v[1 : len(v)-1]
+			}
+			secrets[k] = v
+		}
+	}
+	return secrets
+}
+
+// Load reads .env if present and loads configuration from environment variables.
+// If JWT_SECRET or MASTER_KEY are unset or sample values, it auto-generates secure keys
+// and persists them in data/.secrets (mode 0600).
 func Load() *Config {
 	loadDotEnv(".env")
 
 	port := getEnv("PORT", "8080")
 	dbPath := getEnv("DB_PATH", "data/myssh.db")
-	jwtSecret := getEnv("JWT_SECRET", "myssh-super-secret-jwt-key-2026")
-	masterKey := getEnv("MASTER_KEY", "myssh-master-encryption-key-32b!")
 	recordingsDir := getEnv("RECORDINGS_DIR", "data/recordings")
 	dataDir := getEnv("DATA_DIR", "data")
 
@@ -60,17 +141,97 @@ func Load() *Config {
 		EnableK8s:             getEnvBool("FEATURE_K8S", true),
 	}
 
-	// Ensure directories exist
-	_ = os.MkdirAll(dataDir, 0700)
-	if features.EnableSessionAudit {
-		_ = os.MkdirAll(recordingsDir, 0700)
+	// Resolve secrets (JWT_SECRET, MASTER_KEY, KDF_SALT)
+	secretsPath := filepath.Join(dataDir, ".secrets")
+	persistedSecrets := loadSecretsFile(secretsPath)
+	secretsDirty := false
+
+	// 1. JWT_SECRET
+	rawJWT := os.Getenv("JWT_SECRET")
+	var jwtSecret string
+	if rawJWT != "" && !isSampleOrInsecureKey(rawJWT) {
+		jwtSecret = rawJWT
+	} else {
+		if rawJWT != "" && isSampleOrInsecureKey(rawJWT) {
+			log.Printf("[Config] WARNING: JWT_SECRET matches an insecure default or placeholder ('%s'). Auto-generating or loading persisted secret.\n", rawJWT)
+		}
+		if s, ok := persistedSecrets["JWT_SECRET"]; ok && s != "" && !isSampleOrInsecureKey(s) {
+			jwtSecret = s
+		} else {
+			jwtSecret = generateSecureRandomHex(32)
+			persistedSecrets["JWT_SECRET"] = jwtSecret
+			secretsDirty = true
+			log.Println("[Config] Generated new random 32-byte JWT_SECRET.")
+		}
 	}
+
+	// 2. MASTER_KEY
+	rawMaster := os.Getenv("MASTER_KEY")
+	var masterKey string
+	if rawMaster != "" && !isSampleOrInsecureKey(rawMaster) {
+		masterKey = rawMaster
+	} else {
+		if rawMaster != "" && isSampleOrInsecureKey(rawMaster) {
+			log.Printf("[Config] WARNING: MASTER_KEY matches an insecure default or placeholder ('%s'). Auto-generating or loading persisted secret.\n", rawMaster)
+		}
+		if s, ok := persistedSecrets["MASTER_KEY"]; ok && s != "" && !isSampleOrInsecureKey(s) {
+			masterKey = s
+		} else {
+			masterKey = generateSecureRandomHex(32)
+			persistedSecrets["MASTER_KEY"] = masterKey
+			secretsDirty = true
+			log.Println("[Config] Generated new random 32-byte MASTER_KEY.")
+		}
+	}
+
+	// 3. KDF_SALT
+	rawSalt := os.Getenv("KDF_SALT")
+	var kdfSaltHex string
+	if rawSalt != "" {
+		kdfSaltHex = rawSalt
+	} else if s, ok := persistedSecrets["KDF_SALT"]; ok && s != "" {
+		kdfSaltHex = s
+	} else {
+		kdfSaltHex = generateSecureRandomHex(16)
+		persistedSecrets["KDF_SALT"] = kdfSaltHex
+		secretsDirty = true
+		log.Println("[Config] Generated new per-install random 16-byte KDF_SALT.")
+	}
+
+	var kdfSaltBytes []byte
+	if decoded, err := hex.DecodeString(kdfSaltHex); err == nil && len(decoded) > 0 {
+		kdfSaltBytes = decoded
+	} else {
+		kdfSaltBytes = []byte(kdfSaltHex)
+	}
+
+	// If any secret was generated or needs persistence, write to data/.secrets (mode 0600)
+	if secretsDirty {
+		if err := os.MkdirAll(dataDir, 0700); err != nil {
+			log.Fatalf("[Config] CRITICAL: Failed to create data directory %s: %v", dataDir, err)
+		}
+		var b strings.Builder
+		b.WriteString("# MySSH auto-generated secrets. DO NOT LOSE THIS FILE!\n")
+		b.WriteString("# Losing MASTER_KEY or KDF_SALT will prevent decrypting stored vault credentials.\n")
+		b.WriteString(fmt.Sprintf("JWT_SECRET=%s\n", persistedSecrets["JWT_SECRET"]))
+		b.WriteString(fmt.Sprintf("MASTER_KEY=%s\n", persistedSecrets["MASTER_KEY"]))
+		b.WriteString(fmt.Sprintf("KDF_SALT=%s\n", persistedSecrets["KDF_SALT"]))
+
+		if err := os.WriteFile(secretsPath, []byte(b.String()), 0600); err != nil {
+			log.Fatalf("[Config] CRITICAL: Failed to persist generated secrets to %s: %v. Please ensure data directory is writable or supply keys via environment variables.", secretsPath, err)
+		}
+		log.Printf("[Config] Persisted secrets to %s (permissions 0600)\n", secretsPath)
+	}
+
+	// Configure crypto package with active salt
+	crypto.SetKDFSalt(kdfSaltBytes)
 
 	return &Config{
 		Port:                   port,
 		DBPath:                 dbPath,
 		JWTSecret:              jwtSecret,
 		MasterKey:              masterKey,
+		KDFSalt:                kdfSaltBytes,
 		RecordingsDir:          recordingsDir,
 		DataDir:                dataDir,
 		RateLimitEnabled:       rateLimitEnabled,

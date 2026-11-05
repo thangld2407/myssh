@@ -7,10 +7,11 @@ import (
 )
 
 func TestConfigDefaults(t *testing.T) {
-	// Clear any relevant env vars
-	os.Unsetenv("PORT")
-	os.Unsetenv("DB_PATH")
-	os.Unsetenv("RATE_LIMIT_ENABLED")
+	tmpDir := t.TempDir()
+	t.Setenv("DATA_DIR", tmpDir)
+	t.Setenv("PORT", "")
+	t.Setenv("DB_PATH", "")
+	t.Setenv("RATE_LIMIT_ENABLED", "")
 
 	cfg := Load()
 	if cfg.Port == "" {
@@ -24,6 +25,12 @@ func TestConfigDefaults(t *testing.T) {
 	}
 	if cfg.RateLimitMaxAttempts != 5 {
 		t.Errorf("Expected RateLimitMaxAttempts to be 5, got %d", cfg.RateLimitMaxAttempts)
+	}
+
+	// Verify .secrets was created in the temp directory
+	secretsPath := filepath.Join(tmpDir, ".secrets")
+	if _, err := os.Stat(secretsPath); os.IsNotExist(err) {
+		t.Errorf("Expected .secrets to be created at %s", secretsPath)
 	}
 }
 
@@ -106,4 +113,110 @@ INVALID_LINE_WITHOUT_EQUALS
 	os.Unsetenv("MYSSH_TEST_KEY1")
 	os.Unsetenv("MYSSH_TEST_KEY2")
 	os.Unsetenv("MYSSH_TEST_KEY3")
+}
+
+// F02 Branch 1: Environment empty -> auto-generates secure random keys and persists to .secrets
+func TestLoad_UnsetSecretsAutoGenerates(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DATA_DIR", tmpDir)
+	t.Setenv("JWT_SECRET", "")
+	t.Setenv("MASTER_KEY", "")
+	t.Setenv("KDF_SALT", "")
+
+	cfg := Load()
+
+	if len(cfg.JWTSecret) < 32 {
+		t.Fatalf("Expected auto-generated JWTSecret of at least 32 chars, got %d", len(cfg.JWTSecret))
+	}
+	if len(cfg.MasterKey) < 32 {
+		t.Fatalf("Expected auto-generated MasterKey of at least 32 chars, got %d", len(cfg.MasterKey))
+	}
+	if len(cfg.KDFSalt) != 16 {
+		t.Fatalf("Expected auto-generated 16-byte KDF salt, got %d", len(cfg.KDFSalt))
+	}
+
+	// Verify persistence in .secrets
+	secretsPath := filepath.Join(tmpDir, ".secrets")
+	secrets := loadSecretsFile(secretsPath)
+	if secrets["JWT_SECRET"] != cfg.JWTSecret {
+		t.Errorf("Persisted JWT_SECRET (%s) != loaded cfg.JWTSecret (%s)", secrets["JWT_SECRET"], cfg.JWTSecret)
+	}
+	if secrets["MASTER_KEY"] != cfg.MasterKey {
+		t.Errorf("Persisted MASTER_KEY (%s) != loaded cfg.MasterKey (%s)", secrets["MASTER_KEY"], cfg.MasterKey)
+	}
+}
+
+// F02 Branch 2: Environment contains insecure sample/placeholder keys -> triggers warning, auto-generates, rejects sample
+func TestLoad_SampleSecretsAutoGeneratesWithWarning(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DATA_DIR", tmpDir)
+	t.Setenv("JWT_SECRET", "myssh-super-secret-jwt-key-2026")
+	t.Setenv("MASTER_KEY", "myssh-master-encryption-key-32b!")
+	t.Setenv("KDF_SALT", "")
+
+	cfg := Load()
+
+	if cfg.JWTSecret == "myssh-super-secret-jwt-key-2026" {
+		t.Fatalf("Load() should NOT use the hardcoded sample JWT_SECRET")
+	}
+	if cfg.MasterKey == "myssh-master-encryption-key-32b!" {
+		t.Fatalf("Load() should NOT use the hardcoded sample MASTER_KEY")
+	}
+
+	// Test placeholder __CHANGE_ME__
+	t.Setenv("JWT_SECRET", "__CHANGE_ME__")
+	t.Setenv("MASTER_KEY", "myssh-master-encryption-key-32b-change-me!")
+	cfg2 := Load()
+
+	if cfg2.JWTSecret == "__CHANGE_ME__" {
+		t.Fatalf("Load() should reject __CHANGE_ME__ placeholder")
+	}
+	if cfg2.MasterKey == "myssh-master-encryption-key-32b-change-me!" {
+		t.Fatalf("Load() should reject change-me placeholder")
+	}
+}
+
+// F02 Branch 3: Environment contains valid custom user-supplied keys -> uses them as-is
+func TestLoad_ValidUserSecretsPreserved(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DATA_DIR", tmpDir)
+	customJWT := "my-very-strong-production-jwt-secret-xyz-987"
+	customMaster := "my-very-strong-master-key-32-chars-long!"
+	t.Setenv("JWT_SECRET", customJWT)
+	t.Setenv("MASTER_KEY", customMaster)
+	t.Setenv("KDF_SALT", "")
+
+	cfg := Load()
+
+	if cfg.JWTSecret != customJWT {
+		t.Errorf("Expected custom JWT_SECRET %s, got %s", customJWT, cfg.JWTSecret)
+	}
+	if cfg.MasterKey != customMaster {
+		t.Errorf("Expected custom MASTER_KEY %s, got %s", customMaster, cfg.MasterKey)
+	}
+}
+
+// Verify that rebooting the application reloads the previously generated secrets from .secrets
+func TestLoad_SecretsPersistenceAcrossRestarts(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DATA_DIR", tmpDir)
+	t.Setenv("JWT_SECRET", "")
+	t.Setenv("MASTER_KEY", "")
+	t.Setenv("KDF_SALT", "")
+
+	// First boot: generates secrets
+	cfg1 := Load()
+
+	// Second boot: reloads same secrets
+	cfg2 := Load()
+
+	if cfg1.JWTSecret != cfg2.JWTSecret {
+		t.Errorf("Second boot should reload identical JWT_SECRET: %s != %s", cfg1.JWTSecret, cfg2.JWTSecret)
+	}
+	if cfg1.MasterKey != cfg2.MasterKey {
+		t.Errorf("Second boot should reload identical MASTER_KEY: %s != %s", cfg1.MasterKey, cfg2.MasterKey)
+	}
+	if string(cfg1.KDFSalt) != string(cfg2.KDFSalt) {
+		t.Errorf("Second boot should reload identical KDFSalt")
+	}
 }

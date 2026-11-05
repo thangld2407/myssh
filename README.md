@@ -64,6 +64,9 @@ docker run -d \
   ghcr.io/thangld2407/myssh:latest
 ```
 
+> [!NOTE]
+> **Automatic Key Generation & Security**: On first boot, if `JWT_SECRET` and `MASTER_KEY` are not explicitly provided in the environment, MySSH automatically generates cryptographically secure 32-byte keys and a per-install 16-byte KDF salt. These are securely saved to `data/.secrets` (mode `0600`). Please ensure the `myssh_data` volume is backed up so you never lose your encryption keys.
+
 Access the dashboard at: **`http://localhost:8080`**
 
 ### Option 2: Pre-Compiled Single Binary (No Docker, Zero Runtime Dependencies)
