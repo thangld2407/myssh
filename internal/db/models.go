@@ -87,3 +87,30 @@ type Snippet struct {
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
+
+type KubeCluster struct {
+	ID             string    `gorm:"primaryKey;size:36" json:"id"`
+	Name           string    `gorm:"size:128;not null" json:"name"`
+	Description    string    `gorm:"type:text" json:"description"`
+	CurrentContext string    `gorm:"size:128" json:"current_context"`
+	EncryptedData  string    `gorm:"type:text;not null" json:"-"` // Encrypted kubeconfig YAML
+	Nonce          string    `gorm:"size:64;not null" json:"-"`
+	ServerVersion  string    `gorm:"size:64" json:"server_version,omitempty"`
+	Status         string    `gorm:"size:32;default:'ready'" json:"status"` // ready, error, unreachable
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
+type KubePortForward struct {
+	ID         string    `gorm:"primaryKey;size:36" json:"id"`
+	ClusterID  string    `gorm:"size:36;index;not null" json:"cluster_id"`
+	Cluster    *KubeCluster `gorm:"foreignKey:ClusterID" json:"cluster,omitempty"`
+	Namespace  string    `gorm:"size:128;not null" json:"namespace"`
+	TargetType string    `gorm:"size:32;not null" json:"target_type"` // pod, service
+	TargetName string    `gorm:"size:128;not null" json:"target_name"`
+	LocalPort  int       `gorm:"not null" json:"local_port"`
+	RemotePort int       `gorm:"not null" json:"remote_port"`
+	Status     string    `gorm:"size:32;default:'stopped'" json:"status"` // running, stopped, error
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}

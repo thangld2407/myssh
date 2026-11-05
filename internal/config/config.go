@@ -17,6 +17,7 @@ type FeatureFlags struct {
 	EnableSnippets        bool `json:"enable_snippets"`
 	EnablePublicRoadmap   bool `json:"enable_public_roadmap"`
 	EnableSponsor         bool `json:"enable_sponsor"`
+	EnableK8s             bool `json:"enable_k8s"`
 }
 
 type Config struct {
@@ -56,6 +57,7 @@ func Load() *Config {
 		EnableSnippets:        getEnvBool("FEATURE_SNIPPETS", true),
 		EnablePublicRoadmap:   getEnvBool("FEATURE_PUBLIC_ROADMAP", false),
 		EnableSponsor:         getEnvBool("FEATURE_SPONSOR", true),
+		EnableK8s:             getEnvBool("FEATURE_K8S", true),
 	}
 
 	// Ensure directories exist

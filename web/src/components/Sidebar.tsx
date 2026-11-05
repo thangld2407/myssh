@@ -11,14 +11,15 @@ import {
   Folder,
   Plus,
   Terminal,
-  Code2
+  Code2,
+  Layers
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Host, FeatureFlags } from '../types';
 
 interface SidebarProps {
-  activeView: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap';
-  onSelectView: (view: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap') => void;
+  activeView: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap' | 'k8s';
+  onSelectView: (view: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap' | 'k8s') => void;
   hosts: Host[];
   selectedFolder: string;
   onSelectFolder: (folder: string) => void;
@@ -82,6 +83,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {hosts.length}
               </span>
             </button>
+
+            {features?.enable_k8s !== false && (
+              <button
+                onClick={() => onSelectView('k8s')}
+                className={`w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] ${
+                  activeView === 'k8s'
+                    ? 'bg-blue-50 text-blue-800 border border-blue-200 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+              >
+                <Layers className={`w-4 h-4 ${activeView === 'k8s' ? 'text-blue-600' : 'text-slate-500'}`} />
+                <span>{t('sidebar.kubernetes', 'Kubernetes')}</span>
+              </button>
+            )}
 
             <button
               onClick={() => onSelectView('credentials')}

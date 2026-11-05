@@ -119,6 +119,7 @@
     "allServers": "Tất cả",
     "sponsor": "Ủng hộ dự án",
     "addHost": "Thêm máy chủ",
+    "kubernetes": "Kubernetes",
     "keyVault": "Key Vault",
     "logout": "Đăng xuất"
   },
@@ -283,5 +284,55 @@
     "compact": "Thu gọn",
     "detailed": "Chi tiết",
     "error": "Không thể lấy thông số"
+  },
+  "k8s": {
+    "title": "Quản Lý Cụm Kubernetes",
+    "addCluster": "Thêm Cụm K8s",
+    "editCluster": "Chỉnh sửa Cụm",
+    "deleteCluster": "Xóa Cụm",
+    "noClusters": "Chưa có Cụm Kubernetes nào",
+    "clusterName": "Tên Cụm K8s",
+    "description": "Mô tả",
+    "context": "Context",
+    "kubeconfigYaml": "Nội dung Kubeconfig (YAML)",
+    "replaceKubeconfig": "Thay thế Kubeconfig YAML",
+    "uploadFile": "Tải tệp .kube/config",
+    "encryptionNote": "Kubeconfig của bạn được mã hóa AES-256-GCM trước khi lưu vào cơ sở dữ liệu.",
+    "testConnection": "Kiểm tra kết nối",
+    "testing": "Đang kết nối...",
+    "connected": "Đã kết nối thành công",
+    "saveCluster": "Lưu Cụm K8s",
+    "filterLogs": "Lọc nhật ký...",
+    "editWarning": "Chỉnh sửa sẽ cập nhật trực tiếp cấu hình trên cụm Kubernetes.",
+    "applyChanges": "Áp dụng thay đổi",
+    "applySuccess": "Đã áp dụng thay đổi và đồng bộ thành công!",
+    "confirmDelete": "Bạn có chắc chắn muốn xóa {{kind}} \"{{name}}\"?",
+    "confirmDeleteCluster": "Bạn có chắc chắn muốn xóa cụm \"{{name}}\"?",
+    "emptyTitle": "Kết nối hạ tầng Kubernetes của bạn",
+    "emptyDesc": "Dễ dàng quản lý Pods, xem logs realtime, mở Web Terminal trực tiếp vào container và chuyển tiếp cổng chỉ với Kubeconfig.",
+    "connectFirstCluster": "Kết nối Cụm Đầu Tiên",
+    "targetType": "Loại tài nguyên",
+    "namespace": "Namespace",
+    "serviceName": "Tên Service",
+    "podName": "Tên Pod",
+    "remotePort": "Cổng trên Cụm K8s",
+    "localPort": "Cổng cục bộ trên MySSH",
+    "autoStartPortforward": "Khởi động chuyển tiếp cổng ngay lập tức",
+    "createForward": "Tạo Port Forward",
+    "portforward": {
+      "title": "Chuyển Tiếp Cổng K8s",
+      "subtitle": "Chuyển tiếp cổng của Pod hoặc Service về máy chủ MySSH"
+    },
+    "modal": {
+      "addTitle": "Kết Nối Cụm Kubernetes",
+      "editTitle": "Chỉnh Sửa Cụm Kubernetes",
+      "subtitle": "Nhập Kubeconfig YAML để truy cập Pods, Logs và Terminal"
+    },
+    "errors": {
+      "kubeconfigRequired": "Vui lòng nhập Kubeconfig",
+      "nameRequired": "Vui lòng nhập tên cụm",
+      "testFailed": "Không thể kết nối tới cụm K8s",
+      "saveFailed": "Lưu cụm thất bại"
+    }
   }
 }

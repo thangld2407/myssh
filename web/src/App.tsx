@@ -21,6 +21,7 @@ import { MultiExecTerminal } from './components/MultiExecTerminal';
 import { SnippetModal } from './components/SnippetModal';
 import { TwoFactorModal } from './components/TwoFactorModal';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
+import { K8sManager } from './components/K8sManager';
 
 interface OpenTerminalTab {
   id: string;
@@ -32,7 +33,7 @@ export const App: React.FC = () => {
   const { isAuthenticated, isLoading, isInitialized, login, user } = useAuth();
 
   // Navigation
-  const [activeView, setActiveView] = useState<'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap'>('hosts');
+  const [activeView, setActiveView] = useState<'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap' | 'k8s'>('hosts');
   const [activeTabId, setActiveTabId] = useState<string>('dashboard');
   const [selectedFolder, setSelectedFolder] = useState<string>('All');
   const [terminalTabs, setTerminalTabs] = useState<OpenTerminalTab[]>([]);
@@ -59,6 +60,7 @@ export const App: React.FC = () => {
     enable_snippets: true,
     enable_public_roadmap: false,
     enable_sponsor: true,
+    enable_k8s: true,
   });
 
   // Login form state
@@ -516,6 +518,8 @@ export const App: React.FC = () => {
             {activeView === 'audit' && <SessionAuditView />}
 
             {activeView === 'tunnels' && <TunnelManager hosts={hosts} />}
+
+            {activeView === 'k8s' && <K8sManager />}
 
             {/* Public Roadmap commented out
             {activeView === 'roadmap' && (

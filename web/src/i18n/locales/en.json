@@ -119,6 +119,7 @@
     "allServers": "All Servers",
     "sponsor": "Support Project",
     "addHost": "Add Server",
+    "kubernetes": "Kubernetes",
     "keyVault": "Key Vault",
     "logout": "Sign Out"
   },
@@ -283,5 +284,55 @@
     "compact": "Compact",
     "detailed": "Detailed",
     "error": "Failed to collect metrics"
+  },
+  "k8s": {
+    "title": "Kubernetes Fleet",
+    "addCluster": "Add Cluster",
+    "editCluster": "Edit Cluster",
+    "deleteCluster": "Delete Cluster",
+    "noClusters": "No Kubernetes Clusters",
+    "clusterName": "Cluster Display Name",
+    "description": "Description",
+    "context": "Context",
+    "kubeconfigYaml": "Kubeconfig Content (YAML)",
+    "replaceKubeconfig": "Replace Kubeconfig YAML",
+    "uploadFile": "Upload .kube/config",
+    "encryptionNote": "Your Kubeconfig is encrypted with military-grade AES-256-GCM before database storage.",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "connected": "Connected",
+    "saveCluster": "Save Cluster",
+    "filterLogs": "Filter logs...",
+    "editWarning": "Editing will update live configuration in the Kubernetes cluster.",
+    "applyChanges": "Apply Changes",
+    "applySuccess": "Resource updated and reconciled successfully!",
+    "confirmDelete": "Are you sure you want to delete {{kind}} \"{{name}}\"?",
+    "confirmDeleteCluster": "Are you sure you want to delete cluster \"{{name}}\"?",
+    "emptyTitle": "Connect Your Kubernetes Fleet",
+    "emptyDesc": "Easily manage Pods, stream container logs, open interactive Web Terminals into containers, and forward ports using your Kubeconfig.",
+    "connectFirstCluster": "Connect First Cluster",
+    "targetType": "Target Type",
+    "namespace": "Namespace",
+    "serviceName": "Service Name",
+    "podName": "Pod Name",
+    "remotePort": "Remote Cluster Port",
+    "localPort": "Local Port on MySSH",
+    "autoStartPortforward": "Start port forward immediately",
+    "createForward": "Create Port Forward",
+    "portforward": {
+      "title": "Kubernetes Port Forward",
+      "subtitle": "Forward cluster Pod or Service port to MySSH"
+    },
+    "modal": {
+      "addTitle": "Connect Kubernetes Cluster",
+      "editTitle": "Edit Kubernetes Cluster",
+      "subtitle": "Import Kubeconfig YAML to access Pods, Logs, and interactive terminals"
+    },
+    "errors": {
+      "kubeconfigRequired": "Kubeconfig is required",
+      "nameRequired": "Cluster name is required",
+      "testFailed": "Failed to connect to cluster",
+      "saveFailed": "Failed to save cluster"
+    }
   }
 }

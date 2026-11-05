@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Terminal, HardDrive, KeyRound, Network, History, Heart, Sparkles, Server, ArrowRight, Code2 } from 'lucide-react';
+import { Search, Terminal, HardDrive, KeyRound, Network, History, Heart, Sparkles, Server, ArrowRight, Code2, Layers } from 'lucide-react';
 import { Host, FeatureFlags } from '../types';
 
 interface CommandPaletteProps {
@@ -9,7 +9,7 @@ interface CommandPaletteProps {
   hosts: Host[];
   onOpenTerminal: (host: Host) => void;
   onOpenSftp: (host: Host) => void;
-  onSelectView: (view: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap') => void;
+  onSelectView: (view: 'hosts' | 'audit' | 'tunnels' | 'credentials' | 'roadmap' | 'k8s') => void;
   onOpenSponsor: () => void;
   onOpenImport?: () => void;
   onOpenSnippets?: () => void;
@@ -85,6 +85,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       icon: <Server className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('hosts'); onClose(); },
     },
+    ...(features?.enable_k8s !== false ? [{
+      id: 'view-k8s',
+      title: t('sidebar.kubernetes', 'Kubernetes Clusters'),
+      category: 'Navigation',
+      icon: <Layers className="w-3.5 h-3.5 text-blue-500" />,
+      run: () => { onSelectView('k8s'); onClose(); },
+    }] : []),
     {
       id: 'view-vault',
       title: t('sidebar.keyVault'),

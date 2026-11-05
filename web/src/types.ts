@@ -88,6 +88,7 @@ export interface FeatureFlags {
   enable_snippets: boolean;
   enable_public_roadmap: boolean;
   enable_sponsor: boolean;
+  enable_k8s?: boolean;
 }
 
 export interface SystemFeaturesResponse {
@@ -118,4 +119,103 @@ export interface ServerMetrics {
   disk_percent: number;
   updated_at: string;
 }
+
+export interface KubeCluster {
+  id: string;
+  name: string;
+  description: string;
+  current_context: string;
+  server_version?: string;
+  status: 'ready' | 'error' | 'unreachable';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface K8sNamespace {
+  name: string;
+  status: string;
+  age: string;
+}
+
+export interface K8sNode {
+  name: string;
+  status: string;
+  roles: string;
+  version: string;
+  internal_ip: string;
+  os_image: string;
+  kernel_version: string;
+  cpu_cores: string;
+  memory: string;
+  age: string;
+  labels?: Record<string, string>;
+}
+
+export interface K8sContainerInfo {
+  name: string;
+  image: string;
+  ready: boolean;
+  restart_count: number;
+  state: string;
+}
+
+export interface K8sPod {
+  name: string;
+  namespace: string;
+  status: string;
+  ready: string;
+  restarts: number;
+  ip: string;
+  node: string;
+  age: string;
+  containers: K8sContainerInfo[];
+}
+
+export interface K8sDeployment {
+  name: string;
+  namespace: string;
+  replicas: string;
+  up_to_date: number;
+  available: number;
+  age: string;
+  images: string[];
+}
+
+export interface K8sServicePort {
+  name?: string;
+  protocol: string;
+  port: number;
+  target_port: string;
+  node_port?: number;
+}
+
+export interface K8sService {
+  name: string;
+  namespace: string;
+  type: string;
+  cluster_ip: string;
+  external_ip?: string;
+  ports: K8sServicePort[];
+  age: string;
+}
+
+export interface K8sPortForward {
+  id: string;
+  cluster_id: string;
+  namespace: string;
+  target_type: 'pod' | 'service';
+  target_name: string;
+  local_port: number;
+  remote_port: number;
+  status: 'running' | 'stopped' | 'error';
+  created_at: string;
+}
+
+export interface K8sTestResult {
+  server_version: string;
+  node_count: number;
+  contexts: string[];
+  current_context: string;
+}
+
 

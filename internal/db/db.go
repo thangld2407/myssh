@@ -28,6 +28,8 @@ func Init(dbPath string) (*gorm.DB, error) {
 		&Session{},
 		&Tunnel{},
 		&Snippet{},
+		&KubeCluster{},
+		&KubePortForward{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to auto-migrate: %w", err)

@@ -36,6 +36,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	sessHandler := NewSessionHandler(cfg)
 	tunnHandler := NewTunnelHandler(cfg)
 	snipHandler := NewSnippetHandler(cfg)
+	k8sHandler := NewK8sHandler(cfg)
 
 	// Public System & Auth routes
 	api := r.Group("/api")
@@ -133,6 +134,38 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			tunnels.POST("/:id/start", tunnHandler.Start)
 			tunnels.POST("/:id/stop", tunnHandler.Stop)
 			tunnels.DELETE("/:id", tunnHandler.Delete)
+		}
+
+		// Kubernetes Hub
+		k8s := protected.Group("/k8s", featureGuard(cfg.Features.EnableK8s, "Kubernetes Manager"))
+		{
+			k8s.GET("/clusters", k8sHandler.ListClusters)
+			k8s.POST("/clusters", k8sHandler.CreateCluster)
+			k8s.POST("/clusters/test", k8sHandler.TestCluster)
+			k8s.GET("/clusters/:id", k8sHandler.GetCluster)
+			k8s.PUT("/clusters/:id", k8sHandler.UpdateCluster)
+			k8s.DELETE("/clusters/:id", k8sHandler.DeleteCluster)
+
+			// Resources
+			k8s.GET("/clusters/:id/namespaces", k8sHandler.ListNamespaces)
+			k8s.GET("/clusters/:id/nodes", k8sHandler.ListNodes)
+			k8s.GET("/clusters/:id/pods", k8sHandler.ListPods)
+			k8s.GET("/clusters/:id/deployments", k8sHandler.ListDeployments)
+			k8s.GET("/clusters/:id/services", k8sHandler.ListServices)
+			k8s.GET("/clusters/:id/yaml", k8sHandler.GetYAML)
+			k8s.PUT("/clusters/:id/yaml", k8sHandler.ApplyYAML)
+			k8s.DELETE("/clusters/:id/resource", k8sHandler.DeleteResource)
+
+			// Pod logs & exec
+			k8s.GET("/clusters/:id/pods/:name/logs", k8sHandler.GetPodLogs)
+			k8s.GET("/clusters/:id/pods/:name/exec", k8sHandler.PodExec)
+
+			// Port forwarding
+			k8s.GET("/portforwards", k8sHandler.ListPortForwards)
+			k8s.POST("/portforwards", k8sHandler.CreatePortForward)
+			k8s.POST("/portforwards/:id/start", k8sHandler.StartPortForward)
+			k8s.POST("/portforwards/:id/stop", k8sHandler.StopPortForward)
+			k8s.DELETE("/portforwards/:id", k8sHandler.DeletePortForward)
 		}
 	}
 
