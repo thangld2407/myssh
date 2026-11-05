@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap, Activity } from 'lucide-react';
 import { Host, FeatureFlags } from '../types';
-import { getAuthToken } from '../services/api';
+import { api, getAuthToken } from '../services/api';
 import { SftpPanel } from './SftpPanel';
 import { SnippetModal } from './SnippetModal';
 import { ServerMetricsOverlay } from './ServerMetricsOverlay';
@@ -57,7 +57,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const connectWebSocket = () => {
+  const connectWebSocket = async () => {
     if (!terminalRef.current) return;
 
     if (wsInstance.current) {
@@ -69,6 +69,15 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
 
     setStatus('connecting');
     setSessionSeconds(0);
+
+    let ticket = '';
+    try {
+      const ticketRes = await api.getWsTicket();
+      ticket = ticketRes.ticket;
+    } catch (err) {
+      setStatus('disconnected');
+      return;
+    }
 
     const term = new Terminal({
       theme: {
@@ -138,9 +147,8 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     const cols = term.cols || 120;
     const rows = term.rows || 36;
 
-    const token = getAuthToken();
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?token=${token}&cols=${cols}&rows=${rows}`;
+    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?ticket=${ticket}&cols=${cols}&rows=${rows}`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';

@@ -40,6 +40,8 @@ func TestAuthFlow(t *testing.T) {
 	protected := r.Group("/api")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
 	protected.GET("/auth/me", handler.Me)
+	protected.POST("/auth/logout", handler.Logout)
+	protected.POST("/auth/ws-ticket", handler.CreateWSTicket)
 
 	// 1. Check setup status before initial setup
 	w := httptest.NewRecorder()
@@ -134,7 +136,40 @@ func TestAuthFlow(t *testing.T) {
 		t.Errorf("Expected 200 for /auth/me, got %d", w.Code)
 	}
 
-	// 8. Test /api/auth/me without token
+	// 8. Test /api/auth/ws-ticket with valid token -> returns ticket
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/ws-ticket", nil)
+	req.Header.Set("Authorization", "Bearer "+loginToken)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /auth/ws-ticket, got %d: %s", w.Code, w.Body.String())
+	}
+	var ticketRes map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &ticketRes)
+	ticketVal, ok := ticketRes["ticket"].(string)
+	if !ok || ticketVal == "" {
+		t.Fatalf("Expected ticket in response, got %v", ticketRes)
+	}
+
+	// 9. Test /api/auth/logout -> revokes token
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/logout", nil)
+	req.Header.Set("Authorization", "Bearer "+loginToken)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200 for /auth/logout, got %d", w.Code)
+	}
+
+	// 10. Re-using the logged out token for /auth/me MUST FAIL with 401 Unauthorized
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/auth/me", nil)
+	req.Header.Set("Authorization", "Bearer "+loginToken)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized using revoked token after logout, got %d", w.Code)
+	}
+
+	// 11. Test /api/auth/me without token
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/api/auth/me", nil)
 	r.ServeHTTP(w, req)

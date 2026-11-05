@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,7 +16,33 @@ import (
 )
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+
+	// Custom access logger: strictly strips raw query strings from logs (redacting tokens, tickets, paths)
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		Formatter: func(param gin.LogFormatterParams) string {
+			path := param.Path
+			if idx := strings.Index(path, "?"); idx != -1 {
+				path = path[:idx]
+			}
+			var statusColor, methodColor, resetColor string
+			if param.IsOutputColor() {
+				statusColor = param.StatusCodeColor()
+				methodColor = param.MethodColor()
+				resetColor = param.ResetColor()
+			}
+			return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
+				param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+				statusColor, param.StatusCode, resetColor,
+				param.Latency,
+				param.ClientIP,
+				methodColor, param.Method, resetColor,
+				path,
+				param.ErrorMessage,
+			)
+		},
+	}))
 
 	// Trusted Proxies: default nil (trust no reverse proxies / ignore spoofed X-Forwarded-For)
 	// unless explicitly configured via TRUSTED_PROXIES
@@ -83,6 +110,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	{
 		// Auth & 2FA
 		protected.GET("/auth/me", authHandler.Me)
+		protected.POST("/auth/logout", authHandler.Logout)
+		protected.POST("/auth/ws-ticket", authHandler.CreateWSTicket)
 		protected.POST("/auth/2fa/generate", authHandler.Generate2FA)
 		protected.POST("/auth/2fa/enable", authHandler.Enable2FA)
 		protected.POST("/auth/2fa/disable", authHandler.Disable2FA)

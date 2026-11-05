@@ -4,7 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Zap, X, Terminal as TerminalIcon, Send, RefreshCw, Layers } from 'lucide-react';
 import { Host } from '../types';
-import { getAuthToken } from '../services/api';
+import { api, getAuthToken } from '../services/api';
 
 interface MultiExecTerminalProps {
   hosts: Host[];
@@ -33,7 +33,7 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     { label: 'clear', cmd: 'clear\n' },
   ];
 
-  const initHostTerminal = (host: Host) => {
+  const initHostTerminal = async (host: Host) => {
     const el = terminalRefs.current[host.id];
     if (!el) return;
 
@@ -46,6 +46,15 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     }
 
     setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'connecting' }));
+
+    let ticket = '';
+    try {
+      const ticketRes = await api.getWsTicket();
+      ticket = ticketRes.ticket;
+    } catch {
+      setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'disconnected' }));
+      return;
+    }
 
     const term = new Terminal({
       theme: {
@@ -80,9 +89,8 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
       } catch {}
     }, 60);
 
-    const token = getAuthToken() || '';
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?token=${token}`;
+    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?ticket=${ticket}`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';

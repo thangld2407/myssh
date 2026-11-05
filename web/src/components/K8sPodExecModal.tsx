@@ -5,7 +5,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { X, Maximize2, Minimize2, RefreshCw, Terminal as TerminalIcon, Box } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { K8sPod } from '../types';
-import { getAuthToken } from '../services/api';
+import { api, getAuthToken } from '../services/api';
 
 interface K8sPodExecModalProps {
   isOpen: boolean;
@@ -39,7 +39,7 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
     }
   }, [pod]);
 
-  const connectTerminal = () => {
+  const connectTerminal = async () => {
     if (!terminalRef.current) return;
 
     if (wsInstance.current) {
@@ -50,6 +50,15 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
     }
 
     setStatus('connecting');
+
+    let ticket = '';
+    try {
+      const ticketRes = await api.getWsTicket();
+      ticket = ticketRes.ticket;
+    } catch {
+      setStatus('disconnected');
+      return;
+    }
 
     const term = new Terminal({
       theme: {
@@ -100,14 +109,13 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
     xtermInstance.current = term;
     fitAddonInstance.current = fitAddon;
 
-    const token = getAuthToken();
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     const wsUrl = `${protocol}//${host}/api/k8s/clusters/${clusterId}/pods/${encodeURIComponent(
       pod.name
     )}/exec?namespace=${encodeURIComponent(pod.namespace)}&container=${encodeURIComponent(
       selectedContainer
-    )}&command=${encodeURIComponent(shellCmd)}&token=${encodeURIComponent(token || '')}`;
+    )}&command=${encodeURIComponent(shellCmd)}&ticket=${encodeURIComponent(ticket)}`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';

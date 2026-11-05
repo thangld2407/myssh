@@ -93,7 +93,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return {};
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await api.logout();
+    } catch {}
     clearAuthToken();
     setUser(null);
     window.location.reload();

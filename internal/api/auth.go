@@ -303,6 +303,41 @@ func (h *AuthHandler) Me(c *gin.Context) {
 	})
 }
 
+// CreateWSTicket issues a short-lived (30s) single-use ticket for WebSockets and file downloads.
+func (h *AuthHandler) CreateWSTicket(c *gin.Context) {
+	userID, _ := c.Get("user_id")
+	username, _ := c.Get("username")
+	role, _ := c.Get("role")
+
+	ticket, expiresIn := middleware.IssueWSTicket(
+		fmt.Sprint(userID),
+		fmt.Sprint(username),
+		fmt.Sprint(role),
+	)
+
+	c.JSON(http.StatusOK, gin.H{
+		"ticket":     ticket,
+		"expires_in": expiresIn,
+	})
+}
+
+// Logout revokes the active JWT token via JTI denylist.
+func (h *AuthHandler) Logout(c *gin.Context) {
+	claimsVal, exists := c.Get("jwt_claims")
+	if exists {
+		if claims, ok := claimsVal.(*middleware.JWTClaims); ok && claims.ID != "" {
+			var exp time.Time
+			if claims.ExpiresAt != nil {
+				exp = claims.ExpiresAt.Time
+			} else {
+				exp = time.Now().Add(24 * time.Hour)
+			}
+			middleware.RevokeToken(claims.ID, exp)
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Đăng xuất thành công"})
+}
+
 // Generate2FA tạo Secret Key và QR Code cho ứng dụng Google Authenticator / Authy
 func (h *AuthHandler) Generate2FA(c *gin.Context) {
 	userID, _ := c.Get("user_id")

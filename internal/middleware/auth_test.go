@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/myssh/myssh/internal/db"
@@ -29,6 +30,9 @@ func TestJWTGenerationAndParsing(t *testing.T) {
 
 	if claims.UserID != user.ID || claims.Username != user.Username || claims.Role != user.Role {
 		t.Errorf("Claims mismatch: got %+v, want %+v", claims, user)
+	}
+	if claims.ID == "" {
+		t.Errorf("Expected token to have non-empty JTI claim")
 	}
 }
 
@@ -100,11 +104,63 @@ func TestAuthMiddleware(t *testing.T) {
 		t.Errorf("Expected 200 with Bearer token, got %d", w.Code)
 	}
 
-	// 4. Valid token in query parameter (for WebSocket/download) -> 200
+	// 4. Token in query parameter (?token=...) MUST BE REJECTED (F04 - no JWT in query string / logs)
 	w = httptest.NewRecorder()
 	req, _ = http.NewRequest("GET", "/protected?token="+validToken, nil)
 	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 with ?token= query parameter, got %d", w.Code)
+	}
+
+	// 5. One-time WS ticket in query (?ticket=...) -> 200 on first use
+	ticket, _ := IssueWSTicket(user.ID, user.Username, user.Role)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/protected?ticket="+ticket, nil)
+	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
-		t.Errorf("Expected 200 with query token, got %d", w.Code)
+		t.Errorf("Expected 200 with valid ?ticket=, got %d", w.Code)
+	}
+
+	// 6. Same ticket re-used a second time -> MUST BE REJECTED with 401 (consumed)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/protected?ticket="+ticket, nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 on reused ?ticket=, got %d", w.Code)
+	}
+}
+
+func TestTokenRevocation(t *testing.T) {
+	secret := "revocation-secret-key"
+	user := &db.User{
+		ID:       "usr-revoke",
+		Username: "revokeuser",
+		Role:     "member",
+	}
+	tokenStr, err := GenerateToken(user, secret)
+	if err != nil {
+		t.Fatalf("GenerateToken failed: %v", err)
+	}
+
+	claims, err := ParseToken(tokenStr, secret)
+	if err != nil {
+		t.Fatalf("ParseToken failed: %v", err)
+	}
+
+	// Token is initially valid
+	if IsTokenRevoked(claims.ID) {
+		t.Fatalf("Token should not be revoked initially")
+	}
+
+	// Revoke token
+	RevokeToken(claims.ID, time.Now().Add(1*time.Hour))
+	if !IsTokenRevoked(claims.ID) {
+		t.Fatalf("Token should be reported as revoked after RevokeToken")
+	}
+
+	// ParseToken must now reject the revoked token
+	_, err = ParseToken(tokenStr, secret)
+	if err == nil {
+		t.Fatalf("ParseToken must fail for revoked token")
 	}
 }

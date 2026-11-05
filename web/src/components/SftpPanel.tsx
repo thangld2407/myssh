@@ -91,14 +91,18 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
     }
   };
 
-  const handleDownload = (item: FileItem) => {
-    const downloadUrl = api.downloadSftpUrl(host.id, item.path);
-    const a = document.createElement('a');
-    a.href = downloadUrl;
-    a.download = item.name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = async (item: FileItem) => {
+    try {
+      const downloadUrl = await api.downloadSftpUrl(host.id, item.path);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = item.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err: any) {
+      alert('Lỗi tải tệp: ' + err.message);
+    }
   };
 
   const handleDelete = async (item: FileItem) => {

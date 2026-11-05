@@ -93,6 +93,14 @@ export const api = {
       body: JSON.stringify(data),
     }),
   getMe: () => request<User>('/auth/me'),
+  logout: () =>
+    request<{ message: string }>('/auth/logout', {
+      method: 'POST',
+    }),
+  getWsTicket: () =>
+    request<{ ticket: string; expires_in: number }>('/auth/ws-ticket', {
+      method: 'POST',
+    }),
   generate2FA: () =>
     request<{ secret: string; otpauth_url: string; qr_code: string }>('/auth/2fa/generate', {
       method: 'POST',
@@ -176,9 +184,9 @@ export const api = {
   // SFTP
   listSftp: (hostId: string, path: string = '.') =>
     request<{ path: string; items: FileItem[] }>(`/sftp/${hostId}/list?path=${encodeURIComponent(path)}`),
-  downloadSftpUrl: (hostId: string, path: string) => {
-    const token = getAuthToken();
-    return `${API_BASE}/sftp/${hostId}/download?path=${encodeURIComponent(path)}&token=${token}`;
+  downloadSftpUrl: async (hostId: string, path: string) => {
+    const ticketRes = await api.getWsTicket();
+    return `${API_BASE}/sftp/${hostId}/download?path=${encodeURIComponent(path)}&ticket=${ticketRes.ticket}`;
   },
   uploadSftp: (hostId: string, path: string, file: File) => {
     const formData = new FormData();
