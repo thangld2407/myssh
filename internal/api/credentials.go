@@ -9,6 +9,7 @@ import (
 	"github.com/myssh/myssh/internal/config"
 	"github.com/myssh/myssh/internal/crypto"
 	"github.com/myssh/myssh/internal/db"
+	"github.com/myssh/myssh/internal/sshhub"
 )
 
 type CredentialHandler struct {
@@ -79,6 +80,67 @@ func (h *CredentialHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, cred)
 }
 
+type UpdateCredentialRequest struct {
+	Name       string `json:"name" binding:"required"`
+	Secret     string `json:"secret"` // Optional: if empty, secret remains unchanged
+	Passphrase string `json:"passphrase"`
+	PublicKey  string `json:"public_key"`
+}
+
+func (h *CredentialHandler) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	var cred db.Credential
+	if err := db.DB.First(&cred, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Credential not found"})
+		return
+	}
+
+	var req UpdateCredentialRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	cred.Name = req.Name
+	if req.PublicKey != "" {
+		cred.PublicKey = req.PublicKey
+	}
+
+	// Re-encrypt updated secret if provided
+	if req.Secret != "" {
+		encData, nonce, err := crypto.Encrypt([]byte(req.Secret), h.cfg.MasterKey)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Encryption failed"})
+			return
+		}
+		cred.EncryptedData = encData
+		cred.Nonce = nonce
+	}
+
+	// Re-encrypt updated passphrase if provided
+	if req.Passphrase != "" {
+		encPassphrase, passNonce, err := crypto.Encrypt([]byte(req.Passphrase), h.cfg.MasterKey)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Passphrase encryption failed"})
+			return
+		}
+		cred.EncryptedPassphrase = encPassphrase
+		cred.PassphraseNonce = passNonce
+	}
+
+	cred.UpdatedAt = time.Now()
+	if err := db.DB.Save(&cred).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update credential"})
+		return
+	}
+
+	// Invalidate cached connections across the pool
+	sshhub.GlobalPool.InvalidateAll()
+
+	c.JSON(http.StatusOK, cred)
+}
+
 func (h *CredentialHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 
@@ -94,6 +156,8 @@ func (h *CredentialHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete credential"})
 		return
 	}
+
+	sshhub.GlobalPool.InvalidateAll()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Credential deleted successfully"})
 }

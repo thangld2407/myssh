@@ -25,6 +25,7 @@ func TestCredentialEndpoints(t *testing.T) {
 	r := gin.New()
 	r.GET("/api/credentials", handler.List)
 	r.POST("/api/credentials", handler.Create)
+	r.PUT("/api/credentials/:id", handler.Update)
 	r.DELETE("/api/credentials/:id", handler.Delete)
 	r.POST("/api/credentials/generate-key", handler.GenerateKey)
 
@@ -94,6 +95,29 @@ func TestCredentialEndpoints(t *testing.T) {
 		CredentialID: createdCred.ID,
 	}
 	db.DB.Create(&testHost)
+
+	// F16: Test PUT /api/credentials/:id to rotate credential secret while attached to host
+	updateCredBody, _ := json.Marshal(map[string]string{
+		"name":   "Prod Root Password Rotated",
+		"secret": "BrandNewRotatedPassword!999",
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PUT", "/api/credentials/"+createdCred.ID, bytes.NewBuffer(updateCredBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK for credential update/rotation, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Verify in DB that credential was updated and re-encrypted
+	var updatedDBCred db.Credential
+	db.DB.First(&updatedDBCred, "id = ?", createdCred.ID)
+	if updatedDBCred.Name != "Prod Root Password Rotated" {
+		t.Errorf("Expected updated name, got %s", updatedDBCred.Name)
+	}
+	if updatedDBCred.EncryptedData == dbCred.EncryptedData {
+		t.Errorf("Expected re-encrypted data with new secret, but data was identical")
+	}
 
 	// Attempt delete should fail (400) because it's in use
 	w = httptest.NewRecorder()

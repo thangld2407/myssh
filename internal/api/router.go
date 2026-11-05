@@ -137,6 +137,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		// Credentials
 		protected.GET("/credentials", middleware.RequireRole("admin", "member", "viewer"), credHandler.List)
 		protected.POST("/credentials", middleware.RequireRole("admin"), credHandler.Create)
+		protected.PUT("/credentials/:id", middleware.RequireRole("admin"), credHandler.Update)
 		protected.DELETE("/credentials/:id", middleware.RequireRole("admin"), credHandler.Delete)
 		protected.POST("/credentials/generate-key", middleware.RequireRole("admin"), credHandler.GenerateKey)
 
