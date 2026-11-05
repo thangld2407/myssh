@@ -157,6 +157,10 @@ export const api = {
     request<{ success: boolean; message: string }>(`/hosts/${id}/test`, {
       method: 'POST',
     }),
+  resetHostFingerprint: (id: string) =>
+    request<Host>(`/hosts/${id}/reset-fingerprint`, {
+      method: 'POST',
+    }),
   getHostMetrics: (id: string) => request<ServerMetrics>(`/hosts/${id}/metrics`),
   importSSHConfig: (data: {
     content: string;

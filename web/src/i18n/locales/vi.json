@@ -174,7 +174,13 @@
     "pingError": "Lỗi: {{message}} - Bấm để thử lại",
     "pingUntested": "Chưa kiểm tra - Bấm để ping",
     "closeTerminal": "Đóng terminal",
-    "closeMultiExec": "Đóng Multi-Exec"
+    "closeMultiExec": "Đóng Multi-Exec",
+    "hostKeyFingerprint": "Fingerprint khóa máy chủ",
+    "pinnedFingerprint": "Khóa máy chủ đã lưu (SHA256)",
+    "noFingerprintPinned": "Chưa ghim (sẽ tự động xác thực và ghim ở lần kết nối đầu tiên qua TOFU)",
+    "resetFingerprint": "Đặt lại Fingerprint",
+    "resetFingerprintSuccess": "Đã đặt lại fingerprint khóa máy chủ thành công.",
+    "resetFingerprintConfirm": "Bạn có chắc chắn muốn đặt lại fingerprint khóa máy chủ? Lần kết nối tới sẽ tin cậy khóa mới."
   },
   "sftp": {
     "title": "Trình Quản Lý Tập Tin SFTP",

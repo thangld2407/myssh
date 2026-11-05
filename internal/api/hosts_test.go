@@ -28,6 +28,7 @@ func TestHostCRUDAndImport(t *testing.T) {
 	r.POST("/api/hosts/import", handler.ImportSSHConfig)
 	r.GET("/api/hosts/:id", handler.Get)
 	r.PUT("/api/hosts/:id", handler.Update)
+	r.POST("/api/hosts/:id/reset-fingerprint", handler.ResetFingerprint)
 	r.DELETE("/api/hosts/:id", handler.Delete)
 
 	// Seed a test credential
@@ -122,7 +123,21 @@ func TestHostCRUDAndImport(t *testing.T) {
 		t.Errorf("Expected 1 host in Production folder, got %d", len(hosts))
 	}
 
-	// 6. Import SSH Config - Dry Run
+	// 6. Test Reset Host Key Fingerprint
+	db.DB.Model(&db.Host{}).Where("id = ?", createdHost.ID).Update("host_key_fingerprint", "SHA256:dummy-pinned-fingerprint")
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/hosts/"+createdHost.ID+"/reset-fingerprint", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK on reset fingerprint, got %d", w.Code)
+	}
+	var resetHost db.Host
+	_ = json.Unmarshal(w.Body.Bytes(), &resetHost)
+	if resetHost.HostKeyFingerprint != "" {
+		t.Errorf("Expected empty HostKeyFingerprint after reset, got %s", resetHost.HostKeyFingerprint)
+	}
+
+	// 7. Import SSH Config - Dry Run
 	sshConfigContent := `
 Host dev-api
     HostName api.dev.internal

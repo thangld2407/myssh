@@ -174,7 +174,13 @@
     "pingError": "Error: {{message}} - Click to retry",
     "pingUntested": "Untested - Click to ping",
     "closeTerminal": "Close terminal",
-    "closeMultiExec": "Close Multi-Exec"
+    "closeMultiExec": "Close Multi-Exec",
+    "hostKeyFingerprint": "Host Key Fingerprint",
+    "pinnedFingerprint": "Pinned Host Key (SHA256)",
+    "noFingerprintPinned": "Not yet pinned (will be verified & pinned on first connection via TOFU)",
+    "resetFingerprint": "Reset Fingerprint",
+    "resetFingerprintSuccess": "Host key fingerprint reset successfully.",
+    "resetFingerprintConfirm": "Are you sure you want to reset the pinned host key fingerprint? The next connection will trust the new key."
   },
   "sftp": {
     "title": "SFTP File Explorer",

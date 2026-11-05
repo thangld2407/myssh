@@ -154,6 +154,23 @@ func (h *HostHandler) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, host)
 }
 
+func (h *HostHandler) ResetFingerprint(c *gin.Context) {
+	id := c.Param("id")
+	var host db.Host
+	if err := db.DB.First(&host, "id = ?", id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Host not found"})
+		return
+	}
+
+	if err := db.DB.Model(&host).Update("host_key_fingerprint", "").Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset host key fingerprint"})
+		return
+	}
+	host.HostKeyFingerprint = ""
+	db.DB.Preload("Credential").First(&host, "id = ?", host.ID)
+	c.JSON(http.StatusOK, host)
+}
+
 func (h *HostHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if err := db.DB.Delete(&db.Host{}, "id = ?", id).Error; err != nil {

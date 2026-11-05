@@ -39,8 +39,9 @@ type Host struct {
 	Tags         string      `gorm:"size:255" json:"tags"` // Comma-separated tags
 	CredentialID string      `gorm:"size:36;index" json:"credential_id"`
 	Credential   *Credential `gorm:"foreignKey:CredentialID" json:"credential,omitempty"`
-	JumpHostID   string      `gorm:"size:36" json:"jump_host_id,omitempty"`
-	Description  string      `gorm:"type:text" json:"description"`
+	JumpHostID         string      `gorm:"size:36" json:"jump_host_id,omitempty"`
+	HostKeyFingerprint string      `gorm:"size:128" json:"host_key_fingerprint,omitempty"`
+	Description        string      `gorm:"type:text" json:"description"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`
 }

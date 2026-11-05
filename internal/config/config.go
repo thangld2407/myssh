@@ -25,6 +25,7 @@ type FeatureFlags struct {
 	EnablePublicRoadmap   bool `json:"enable_public_roadmap"`
 	EnableSponsor         bool `json:"enable_sponsor"`
 	EnableK8s             bool `json:"enable_k8s"`
+	EnableStrictHostKey   bool `json:"strict_host_key"`
 }
 
 type Config struct {
@@ -139,6 +140,7 @@ func Load() *Config {
 		EnablePublicRoadmap:   getEnvBool("FEATURE_PUBLIC_ROADMAP", false),
 		EnableSponsor:         getEnvBool("FEATURE_SPONSOR", true),
 		EnableK8s:             getEnvBool("FEATURE_K8S", true),
+		EnableStrictHostKey:   getEnvBool("FEATURE_STRICT_HOST_KEY", true),
 	}
 
 	// Resolve secrets (JWT_SECRET, MASTER_KEY, KDF_SALT)

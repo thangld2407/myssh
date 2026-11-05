@@ -2,6 +2,10 @@ package sshhub
 
 import (
 	"fmt"
+	"log"
+	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/myssh/myssh/internal/crypto"
@@ -10,9 +14,60 @@ import (
 )
 
 type SSHConnectionInfo struct {
-	Host     *db.Host
-	JumpHost *db.Host
-	MasterKey string
+	Host                  *db.Host
+	JumpHost              *db.Host
+	MasterKey             string
+	InsecureIgnoreHostKey bool // Set true to bypass host key verification
+}
+
+// isStrictHostKeyEnabled returns true unless disabled via env or connection option
+func isStrictHostKeyEnabled(info SSHConnectionInfo) bool {
+	if info.InsecureIgnoreHostKey {
+		return false
+	}
+	envVal := strings.ToLower(strings.TrimSpace(os.Getenv("FEATURE_STRICT_HOST_KEY")))
+	if envVal == "false" || envVal == "0" || envVal == "no" || envVal == "off" {
+		return false
+	}
+	return true
+}
+
+// KnownHostCallback returns an ssh.HostKeyCallback enforcing TOFU (Trust On First Use) or host key pinning.
+func KnownHostCallback(host *db.Host, strict bool) ssh.HostKeyCallback {
+	return func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+		fingerprint := ssh.FingerprintSHA256(key)
+		if host == nil {
+			if !strict {
+				log.Printf("[SSH] WARNING: Dialing %s with nil host record. Host key: %s (FEATURE_STRICT_HOST_KEY=false)\n", hostname, fingerprint)
+				return nil
+			}
+			return fmt.Errorf("HOST KEY VERIFICATION FAILED: host record is nil for %s", hostname)
+		}
+
+		if host.HostKeyFingerprint == "" {
+			// TOFU (Trust On First Use): pin fingerprint
+			host.HostKeyFingerprint = fingerprint
+			log.Printf("[SSH] TOFU: Pinning host key fingerprint for host '%s' (%s): %s\n", host.Name, hostname, fingerprint)
+			if db.DB != nil && host.ID != "" {
+				if err := db.DB.Model(&db.Host{}).Where("id = ?", host.ID).Update("host_key_fingerprint", fingerprint).Error; err != nil {
+					log.Printf("[SSH] Warning: Failed to persist host key fingerprint for host '%s': %v\n", host.ID, err)
+				}
+			}
+			return nil
+		}
+
+		// Verify pinned fingerprint
+		if host.HostKeyFingerprint != fingerprint {
+			if !strict {
+				log.Printf("[SSH] WARNING: HOST KEY MISMATCH for %s: expected %s, got %s (FEATURE_STRICT_HOST_KEY=false)\n",
+					hostname, host.HostKeyFingerprint, fingerprint)
+				return nil
+			}
+			return fmt.Errorf("HOST KEY MISMATCH for %s: expected %s, got %s", hostname, host.HostKeyFingerprint, fingerprint)
+		}
+
+		return nil
+	}
 }
 
 // BuildAuthMethod extracts and decrypts credential to return ssh.AuthMethod
@@ -62,10 +117,12 @@ func DialTarget(info SSHConnectionInfo) (*ssh.Client, error) {
 		return nil, fmt.Errorf("target host auth error: %w", err)
 	}
 
+	strict := isStrictHostKeyEnabled(info)
+
 	targetConfig := &ssh.ClientConfig{
 		User:            targetHost.Username,
 		Auth:            []ssh.AuthMethod{authMethod},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // In production, known_hosts can be verified
+		HostKeyCallback: KnownHostCallback(targetHost, strict),
 		Timeout:         15 * time.Second,
 	}
 
@@ -89,7 +146,7 @@ func DialTarget(info SSHConnectionInfo) (*ssh.Client, error) {
 	jumpConfig := &ssh.ClientConfig{
 		User:            info.JumpHost.Username,
 		Auth:            []ssh.AuthMethod{jumpAuth},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		HostKeyCallback: KnownHostCallback(info.JumpHost, strict),
 		Timeout:         15 * time.Second,
 	}
 

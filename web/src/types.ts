@@ -25,6 +25,7 @@ export interface Host {
   credential_id: string;
   credential?: Credential;
   jump_host_id?: string;
+  host_key_fingerprint?: string;
   description: string;
   created_at: string;
 }

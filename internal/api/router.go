@@ -93,6 +93,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected.PUT("/hosts/:id", hostHandler.Update)
 		protected.DELETE("/hosts/:id", hostHandler.Delete)
 		protected.POST("/hosts/:id/test", hostHandler.TestConnection)
+		protected.POST("/hosts/:id/reset-fingerprint", hostHandler.ResetFingerprint)
 		protected.GET("/hosts/:id/metrics", hostHandler.GetMetrics)
 
 		// Terminal WebSocket
