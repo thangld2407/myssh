@@ -42,6 +42,9 @@ func Init(dbPath string) (*gorm.DB, error) {
 		seedDefaultSnippets(DB)
 	}
 
+	// Reconcile stale records from previous ungraceful shutdowns or process restarts (F10)
+	ReconcileState(DB)
+
 	// Check if admin user exists; if empty, system requires First-Run Setup Wizard via Web UI
 	var userCount int64
 	DB.Model(&User{}).Count(&userCount)
@@ -108,4 +111,31 @@ func seedDefaultSnippets(database *gorm.DB) {
 		_ = database.Create(&s).Error
 	}
 	log.Println("[DB] Seeded 6 DevOps default snippets successfully.")
+}
+
+// ReconcileState cleans up stale in-flight records when booting or shutting down.
+func ReconcileState(database *gorm.DB) {
+	if database == nil {
+		return
+	}
+	res1 := database.Model(&Session{}).Where("status IN ('active', 'connecting')").Update("status", "closed")
+	if res1.Error != nil {
+		log.Printf("[DB] Warning: Failed to reconcile stale sessions: %v\n", res1.Error)
+	} else if res1.RowsAffected > 0 {
+		log.Printf("[DB] Reconciled %d stale active/connecting sessions to 'closed'.\n", res1.RowsAffected)
+	}
+
+	res2 := database.Model(&Tunnel{}).Where("status = ?", "running").Update("status", "stopped")
+	if res2.Error != nil {
+		log.Printf("[DB] Warning: Failed to reconcile stale tunnels: %v\n", res2.Error)
+	} else if res2.RowsAffected > 0 {
+		log.Printf("[DB] Reconciled %d stale running tunnels to 'stopped'.\n", res2.RowsAffected)
+	}
+
+	res3 := database.Model(&KubePortForward{}).Where("status = ?", "running").Update("status", "stopped")
+	if res3.Error != nil {
+		log.Printf("[DB] Warning: Failed to reconcile stale k8s port-forwards: %v\n", res3.Error)
+	} else if res3.RowsAffected > 0 {
+		log.Printf("[DB] Reconciled %d stale running k8s port-forwards to 'stopped'.\n", res3.RowsAffected)
+	}
 }

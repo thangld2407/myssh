@@ -164,3 +164,13 @@ func (m *PortForwardManager) IsRunning(id string) bool {
 	_, exists := m.forwarders[id]
 	return exists
 }
+
+// StopAll terminates all active port forwards during graceful shutdown.
+func (m *PortForwardManager) StopAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for id, apf := range m.forwarders {
+		close(apf.StopChan)
+		delete(m.forwarders, id)
+	}
+}

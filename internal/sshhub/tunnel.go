@@ -149,3 +149,15 @@ func (h *TunnelHub) IsRunning(id string) bool {
 	_, exists := h.tunnels[id]
 	return exists
 }
+
+// StopAll stops all active tunnels during graceful shutdown.
+func (h *TunnelHub) StopAll() {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	for id, active := range h.tunnels {
+		close(active.StopChan)
+		_ = active.Listener.Close()
+		_ = active.SSH.Close()
+		delete(h.tunnels, id)
+	}
+}
