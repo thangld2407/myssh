@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Terminal, HardDrive, KeyRound, Network, History, Heart, Sparkles, Server, ArrowRight, Code2 } from 'lucide-react';
 import { Host, FeatureFlags } from '../types';
 
@@ -28,6 +29,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onOpenSnippets,
   features,
 }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,58 +59,49 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   const actions = [
     ...(features?.enable_import_ssh_config !== false ? [{
       id: 'import-ssh',
-      title: 'Import Cấu Hình Máy Chủ (~/.ssh/config)',
-      category: 'Actions',
+      title: t('commandPalette.importSsh'),
+      category: t('commandPalette.actions'),
       icon: <Server className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onOpenImport?.(); onClose(); },
     }] : []),
     ...(features?.enable_snippets !== false ? [{
       id: 'snippets',
-      title: 'Kho Lệnh Mẫu & Snippet Library (DevOps Quick Commands)',
-      category: 'Actions',
+      title: t('commandPalette.snippets'),
+      category: t('commandPalette.actions'),
       icon: <Code2 className="w-3.5 h-3.5 text-emerald-500" />,
       run: () => { onOpenSnippets?.(); onClose(); },
     }] : []),
     ...(features?.enable_sponsor !== false ? [{
       id: 'sponsor',
-      title: 'Sponsor & Ủng Hộ Dự Án (Build in Public)',
-      category: 'Community',
+      title: t('commandPalette.sponsor'),
+      category: t('commandPalette.community'),
       icon: <Heart className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onOpenSponsor(); onClose(); },
     }] : []),
-    /* Public Roadmap commented out
-    ...(features?.enable_public_roadmap !== false ? [{
-      id: 'view-roadmap',
-      title: 'Public Roadmap & Biểu Quyết Tính Năng',
-      category: 'Navigation',
-      icon: <Sparkles className="w-3.5 h-3.5 text-zinc-400" />,
-      run: () => { onSelectView('roadmap'); onClose(); },
-    }] : []),
-    */
     {
       id: 'view-hosts',
-      title: 'Quản Lý Máy Chủ & Hosts',
+      title: t('sidebar.hosts'),
       category: 'Navigation',
       icon: <Server className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('hosts'); onClose(); },
     },
     {
       id: 'view-vault',
-      title: 'Key Vault (Khóa SSH & Password)',
+      title: t('sidebar.keyVault'),
       category: 'Navigation',
       icon: <KeyRound className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('credentials'); onClose(); },
     },
     ...(features?.enable_tunnels !== false ? [{
       id: 'view-tunnels',
-      title: 'SSH Port Forwarding & Tunnels',
+      title: t('sidebar.tunnels'),
       category: 'Navigation',
       icon: <Network className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('tunnels'); onClose(); },
     }] : []),
     ...(features?.enable_session_audit !== false ? [{
       id: 'view-audit',
-      title: 'Session Audit Logs',
+      title: t('sidebar.audit'),
       category: 'Navigation',
       icon: <History className="w-3.5 h-3.5 text-zinc-400" />,
       run: () => { onSelectView('audit'); onClose(); },
@@ -117,15 +110,15 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
   const hostItems = hosts.map((h) => ({
     id: `host-term-${h.id}`,
-    title: `Mở Terminal: ${h.name} (${h.username}@${h.hostname})`,
-    category: 'Servers',
+    title: `${t('hosts.connectTerminal')}: ${h.name} (${h.username}@${h.hostname})`,
+    category: t('commandPalette.servers'),
     icon: <Terminal className="w-3.5 h-3.5 text-zinc-400" />,
     run: () => { onOpenTerminal(h); onClose(); },
   }));
 
   const sftpItems = features?.enable_sftp !== false ? hosts.map((h) => ({
     id: `host-sftp-${h.id}`,
-    title: `Mở SFTP: ${h.name} (${h.hostname})`,
+    title: `SFTP: ${h.name} (${h.hostname})`,
     category: 'SFTP',
     icon: <HardDrive className="w-3.5 h-3.5 text-zinc-400" />,
     run: () => { onOpenSftp(h); onClose(); },
@@ -175,7 +168,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
               setQuery(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder="Gõ lệnh hoặc tìm máy chủ..."
+            placeholder={t('commandPalette.placeholder')}
             className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none font-medium"
           />
           <kbd className="px-2 py-0.5 rounded-md bg-slate-100 text-[10px] font-mono text-slate-500 border border-slate-200 font-bold shadow-2xs">
@@ -226,7 +219,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
 
           {filtered.length === 0 && (
             <div className="py-12 text-center text-xs text-slate-400">
-              Không tìm thấy lệnh hoặc máy chủ phù hợp với "{query}".
+              {t('commandPalette.noResults')}
             </div>
           )}
         </div>
@@ -234,10 +227,10 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
         <div className="h-10 border-t border-slate-200 px-5 bg-white flex items-center justify-between text-xs text-slate-500 font-mono shrink-0">
           <div className="flex items-center space-x-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↑↓</kbd> Di chuyển
+              <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↑↓</kbd> {t('commandPalette.navigate')}
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↵</kbd> Thực hiện
+              <kbd className="px-1 py-0.2 rounded bg-slate-100 border border-slate-200 text-[10px]">↵</kbd> {t('commandPalette.select')}
             </span>
           </div>
           <div className="flex items-center gap-2">

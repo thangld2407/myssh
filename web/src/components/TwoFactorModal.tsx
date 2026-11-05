@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShieldCheck, ShieldAlert, KeyRound, Copy, Check, AlertCircle, ArrowRight, X, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,6 +10,7 @@ interface TwoFactorModalProps {
 }
 
 export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const [step, setStep] = useState<'idle' | 'setup' | 'disable'>('idle');
   const [loading, setLoading] = useState(false);
@@ -35,7 +37,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
       setQrCode(res.qr_code);
       setStep('setup');
     } catch (err: any) {
-      setError(err.message || 'Không thể tạo mã 2FA');
+      setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +53,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
   const handleEnable2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      setError('Vui lòng nhập mã xác thực 6 chữ số');
+      setError(t('twoFactor.enterCodePrompt'));
       return;
     }
     setLoading(true);
@@ -59,11 +61,11 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
     try {
       await api.enable2FA({ secret, code: code.trim() });
       await refreshUser();
-      setSuccessMsg('Kích hoạt xác thực 2 yếu tố (2FA) thành công!');
+      setSuccessMsg(t('twoFactor.enabledSuccess'));
       setStep('idle');
       setCode('');
     } catch (err: any) {
-      setError(err.message || 'Mã xác thực không đúng hoặc đã hết hạn');
+      setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
   const handleDisable2FA = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!disablePassword) {
-      setError('Vui lòng nhập mật khẩu xác nhận');
+      setError(t('twoFactor.enterPasswordToDisable'));
       return;
     }
     setLoading(true);
@@ -80,11 +82,11 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
     try {
       await api.disable2FA({ password: disablePassword });
       await refreshUser();
-      setSuccessMsg('Đã tắt xác thực 2 yếu tố thành công');
+      setSuccessMsg(t('twoFactor.disabledSuccess'));
       setStep('idle');
       setDisablePassword('');
     } catch (err: any) {
-      setError(err.message || 'Mật khẩu xác nhận không chính xác');
+      setError(err.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -104,8 +106,8 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
               {isEnabled ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-sm font-bold text-slate-900">Bảo Mật Hai Lớp (2FA / TOTP)</h2>
-              <p className="text-xs text-slate-500">Google Authenticator, Authy, Apple Passwords</p>
+              <h2 className="text-sm font-bold text-slate-900">{t('twoFactor.title')}</h2>
+              <p className="text-xs text-slate-500">{t('twoFactor.subtitle')}</p>
             </div>
           </div>
           <button
@@ -147,12 +149,10 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                 )}
                 <div className="text-xs space-y-1">
                   <p className="font-semibold text-slate-900">
-                    {isEnabled ? '2FA Đang Được Kích Hoạt' : '2FA Chưa Được Kích Hoạt'}
+                    {isEnabled ? t('twoFactor.activeTitle') : t('twoFactor.inactiveTitle')}
                   </p>
                   <p className="text-slate-600 leading-relaxed">
-                    {isEnabled
-                      ? 'Tài khoản của bạn được bảo vệ an toàn. Khi đăng nhập từ bất kỳ thiết bị nào, hệ thống sẽ yêu cầu mã xác thực 6 số.'
-                      : 'Kích hoạt 2FA để ngăn chặn các cuộc tấn công Brute-force khi đưa MySSH ra môi trường Internet công cộng.'}
+                    {isEnabled ? t('twoFactor.activeDesc') : t('twoFactor.inactiveDesc')}
                   </p>
                 </div>
               </div>
@@ -163,7 +163,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                   onClick={() => setStep('disable')}
                   className="w-full h-10 px-4 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center justify-center gap-2 transition"
                 >
-                  <span>Tắt Xác Thực 2FA</span>
+                  <span>{t('twoFactor.disable2FA')}</span>
                 </button>
               ) : (
                 <button
@@ -177,7 +177,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                   ) : (
                     <>
                       <KeyRound className="w-4 h-4" />
-                      <span>Thiết Lập 2FA Ngay</span>
+                      <span>{t('twoFactor.setupNow')}</span>
                     </>
                   )}
                 </button>
@@ -190,7 +190,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
             <form onSubmit={handleEnable2FA} className="space-y-4">
               <div className="text-center space-y-2">
                 <p className="text-xs text-slate-600">
-                  Dùng ứng dụng <strong>Google Authenticator</strong> hoặc <strong>Authy</strong> quét mã QR dưới đây:
+                  {t('twoFactor.scanQrInstruction')}
                 </p>
                 {qrCode && (
                   <div className="inline-block p-2 bg-white border border-slate-200 rounded-xl shadow-xs">
@@ -202,7 +202,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
               {/* Secret key fallback */}
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  Khóa dự phòng nhập tay (Secret Key)
+                  {t('twoFactor.secretKey')}
                 </label>
                 <div className="flex items-center space-x-2">
                   <input
@@ -217,7 +217,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                     className="h-8 px-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs flex items-center gap-1 shrink-0"
                   >
                     {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Đã chép' : 'Sao chép'}</span>
+                    <span>{copied ? t('common.copied') : t('common.copy')}</span>
                   </button>
                 </div>
               </div>
@@ -225,7 +225,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
               {/* 6-digit confirmation code */}
               <div className="space-y-1 pt-1">
                 <label className="text-xs font-semibold text-slate-700 block">
-                  Nhập mã 6 chữ số từ ứng dụng:
+                  {t('twoFactor.enterCodePrompt')}
                 </label>
                 <input
                   type="text"
@@ -244,7 +244,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                   onClick={() => setStep('idle')}
                   className="w-1/3 h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -255,7 +255,7 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                     <RefreshCw className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <span>Xác Nhận & Bật 2FA</span>
+                      <span>{t('twoFactor.confirmAndEnable')}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -268,12 +268,12 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
           {step === 'disable' && (
             <form onSubmit={handleDisable2FA} className="space-y-4">
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
-                ⚠️ Cảnh báo: Tắt 2FA sẽ giảm độ an toàn tài khoản khi hệ thống kết nối với Internet.
+                {t('twoFactor.disableWarning')}
               </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-slate-700 block">
-                  Nhập mật khẩu hiện tại để xác nhận:
+                  {t('twoFactor.enterPasswordToDisable')}
                 </label>
                 <input
                   type="password"
@@ -291,14 +291,14 @@ export const TwoFactorModal: React.FC<TwoFactorModalProps> = ({ isOpen, onClose 
                   onClick={() => setStep('idle')}
                   className="w-1/3 h-10 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold transition"
                 >
-                  Hủy
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={loading || !disablePassword}
                   className="w-2/3 h-10 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm"
                 >
-                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Xác Nhận Tắt 2FA'}
+                  {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : t('twoFactor.confirmDisable')}
                 </button>
               </div>
             </form>

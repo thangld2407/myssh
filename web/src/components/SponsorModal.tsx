@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Heart, Coffee, X, Sparkles, UserCheck } from 'lucide-react';
 import momoQr from '../assets/momo.jpg';
 
@@ -7,6 +8,8 @@ interface SponsorModalProps {
 }
 
 export const SponsorModal: React.FC<SponsorModalProps> = ({ onClose }) => {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-backdrop">
       <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden text-slate-800 animate-modal">
@@ -17,15 +20,15 @@ export const SponsorModal: React.FC<SponsorModalProps> = ({ onClose }) => {
               <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
             </div>
             <div>
-              <h2 className="font-bold text-slate-900 text-sm">Ủng Hộ Tác Giả (Buy Me a Coffee)</h2>
-              <p className="text-xs text-slate-500 font-normal">Dự án mã nguồn mở MySSH</p>
+              <h2 className="font-bold text-slate-900 text-sm">{t('sponsor.title')}</h2>
+              <p className="text-xs text-slate-500 font-normal">{t('sponsor.subtitle')}</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
             className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition active:scale-90"
-            title="Đóng"
+            title={t('common.close')}
           >
             <X className="w-4 h-4" />
           </button>
@@ -36,7 +39,7 @@ export const SponsorModal: React.FC<SponsorModalProps> = ({ onClose }) => {
           {/* Author Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-xs text-slate-700 font-medium">
             <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Tác giả: <strong>Victor Le</strong></span>
+            <span>{t('sponsor.author')}: <strong>Victor Le</strong></span>
           </div>
 
           {/* MoMo QR Code */}
@@ -52,17 +55,17 @@ export const SponsorModal: React.FC<SponsorModalProps> = ({ onClose }) => {
           <div className="space-y-1.5 max-w-xs">
             <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-800">
               <Coffee className="w-4 h-4 text-amber-600" />
-              <span>Quét mã MoMo để mời tác giả ly cà phê</span>
+              <span>{t('sponsor.momoPrompt')}</span>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              MySSH là sản phẩm 100% miễn phí. Nếu ứng dụng giúp bạn quản lý máy chủ thuận tiện và tiết kiệm chi phí, sự ủng hộ của bạn là nguồn động lực lớn để duy trì và nâng cấp dự án!
+              {t('sponsor.freeNote')}
             </p>
           </div>
 
           {/* Footer note */}
           <div className="w-full pt-3 border-t border-slate-100 text-center">
             <span className="text-[11px] text-slate-400 font-mono">
-              Made with ❤️ by Victor Le for the Sysadmin & DevOps community
+              {t('sponsor.madeWithLove')}
             </span>
           </div>
         </div>

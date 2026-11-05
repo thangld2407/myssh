@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Server,
   Terminal,
@@ -49,6 +50,7 @@ export const HostList: React.FC<HostListProps> = ({
   onRefresh,
   features,
 }) => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -131,12 +133,12 @@ export const HostList: React.FC<HostListProps> = ({
 
   const handleDeleteHost = async (host: Host, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (!confirm(`Bạn có chắc muốn xóa máy chủ "${host.name}" (${host.hostname})?`)) return;
+    if (!confirm(t('hosts.deleteConfirm', { name: host.name, hostname: host.hostname }))) return;
     try {
       await api.deleteHost(host.id);
       onRefresh();
     } catch (err: any) {
-      alert('Lỗi xóa máy chủ: ' + err.message);
+      alert(t('hosts.deleteFailed') + err.message);
     }
   };
 
@@ -145,7 +147,7 @@ export const HostList: React.FC<HostListProps> = ({
       {/* Top Application Toolbar */}
       <div className="h-14 px-6 border-b border-slate-200 flex items-center justify-between bg-white shrink-0 shadow-2xs">
         <div className="flex items-center space-x-2 text-xs text-slate-500">
-          <span>Máy chủ</span>
+          <span>{t('sidebar.hosts')}</span>
           <span className="text-slate-300">/</span>
           <span className="text-slate-900 font-semibold">{selectedFolder}</span>
           <span className="text-slate-400 font-mono text-xs">({filteredHosts.length})</span>
@@ -159,7 +161,7 @@ export const HostList: React.FC<HostListProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm theo tên, IP, user..."
+              placeholder={t('hosts.searchPlaceholder')}
               className="w-full h-9 pl-9 pr-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-all duration-150"
             />
           </div>
@@ -173,7 +175,7 @@ export const HostList: React.FC<HostListProps> = ({
                   ? 'bg-white text-slate-900 shadow-2xs border border-slate-200 font-semibold'
                   : 'text-slate-400 hover:text-slate-700'
               }`}
-              title="Chế độ Bảng"
+              title={t('common.viewTable')}
             >
               <LayoutList className="w-4 h-4" />
             </button>
@@ -184,7 +186,7 @@ export const HostList: React.FC<HostListProps> = ({
                   ? 'bg-white text-slate-900 shadow-2xs border border-slate-200 font-semibold'
                   : 'text-slate-400 hover:text-slate-700'
               }`}
-              title="Chế độ Lưới"
+              title={t('common.viewGrid')}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
@@ -195,10 +197,10 @@ export const HostList: React.FC<HostListProps> = ({
             onClick={handleTestAllHosts}
             disabled={isTestingAll || filteredHosts.length === 0}
             className="h-9 px-3 rounded-lg bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 border border-slate-200 shadow-2xs disabled:opacity-50"
-            title="Kiểm tra kết nối toàn bộ máy chủ trong danh sách"
+            title={t('hosts.pingAll')}
           >
             <Activity className={`w-3.5 h-3.5 text-slate-500 ${isTestingAll ? 'animate-spin text-emerald-600' : ''}`} />
-            <span className="hidden sm:inline">{isTestingAll ? 'Đang ping...' : 'Ping tất cả'}</span>
+            <span className="hidden sm:inline">{isTestingAll ? t('hosts.pinging') : t('hosts.pingAll')}</span>
           </button>
 
           {/* Import SSH Config Button */}
@@ -206,10 +208,10 @@ export const HostList: React.FC<HostListProps> = ({
             <button
               onClick={onImportSSHConfig}
               className="h-9 px-3 rounded-lg bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 border border-slate-200 shadow-2xs"
-              title="Nhập máy chủ từ file ~/.ssh/config"
+              title={t('hosts.importSshConfig')}
             >
               <FileUp className="w-3.5 h-3.5 text-slate-500" />
-              <span className="hidden sm:inline">Import Config</span>
+              <span className="hidden sm:inline">{t('hosts.importConfig')}</span>
             </button>
           )}
 
@@ -219,7 +221,7 @@ export const HostList: React.FC<HostListProps> = ({
             className="h-9 px-3.5 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 active:bg-slate-950 text-white text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 shadow-2xs shrink-0"
           >
             <Plus className="w-4 h-4" />
-            <span>Thêm Máy Chủ</span>
+            <span>{t('hosts.addHost')}</span>
           </button>
         </div>
       </div>
@@ -247,13 +249,13 @@ export const HostList: React.FC<HostListProps> = ({
                       />
                     </th>
                   )}
-                  <th className="py-3 px-4 w-16 text-center">Status</th>
-                  <th className="py-3 px-4">Tên Máy Chủ</th>
-                  <th className="py-3 px-4">Địa Chỉ IP / Host</th>
-                  <th className="py-3 px-4 w-28">User</th>
-                  <th className="py-3 px-4 w-48">Khóa Xác Thực</th>
-                  <th className="py-3 px-4 w-32">Môi Trường</th>
-                  <th className="py-3 px-4 text-right pr-5 w-56">Thao Tác</th>
+                  <th className="py-3 px-4 w-16 text-center">{t('hosts.tableStatus')}</th>
+                  <th className="py-3 px-4">{t('hosts.tableName')}</th>
+                  <th className="py-3 px-4">{t('hosts.tableIp')}</th>
+                  <th className="py-3 px-4 w-28">{t('hosts.tableUser')}</th>
+                  <th className="py-3 px-4 w-48">{t('hosts.tableAuth')}</th>
+                  <th className="py-3 px-4 w-32">{t('hosts.tableEnv')}</th>
+                  <th className="py-3 px-4 text-right pr-5 w-56">{t('hosts.tableActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono">
@@ -295,12 +297,12 @@ export const HostList: React.FC<HostListProps> = ({
                             className="group/status relative inline-flex items-center justify-center p-1 rounded-full hover:bg-slate-100 transition active:scale-90"
                             title={
                               isTesting
-                                ? 'Đang kiểm tra kết nối...'
+                                ? t('hosts.pinging')
                                 : status
                                 ? status.success
-                                  ? `Online (Ping: ${status.latency}ms) - Bấm để kiểm tra lại`
-                                  : `Lỗi: ${status.message} - Bấm để thử lại`
-                                : 'Chưa kiểm tra - Bấm để ping'
+                                  ? t('hosts.pingSuccess', { latency: status.latency })
+                                  : t('hosts.pingError', { message: status.message })
+                                : t('hosts.pingUntested')
                             }
                           >
                             {isTesting ? (
@@ -375,7 +377,7 @@ export const HostList: React.FC<HostListProps> = ({
                             <span className="truncate">{host.credential.name}</span>
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-xs">Chưa gắn key</span>
+                          <span className="text-slate-400 text-xs">{t('hosts.noKeyAttached')}</span>
                         )}
                       </td>
 
@@ -393,10 +395,10 @@ export const HostList: React.FC<HostListProps> = ({
                           <button
                             onClick={() => onOpenTerminal(host)}
                             className="h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 shadow-2xs"
-                            title="Mở Web Terminal"
+                            title={t('hosts.connectTerminal')}
                           >
                             <Terminal className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Kết nối</span>
+                            <span>{t('hosts.connectTerminal')}</span>
                           </button>
 
                           {/* Secondary CTA: SFTP Explorer */}
@@ -404,7 +406,7 @@ export const HostList: React.FC<HostListProps> = ({
                             <button
                               onClick={() => onOpenSftp(host)}
                               className="h-8 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-all duration-150 border border-slate-200/60"
-                              title="Quản lý File SFTP"
+                              title={t('hosts.openSftp')}
                             >
                               <FolderDown className="w-3.5 h-3.5 text-slate-600" />
                               <span>SFTP</span>
@@ -420,7 +422,7 @@ export const HostList: React.FC<HostListProps> = ({
                                   ? 'bg-slate-200 text-slate-900 border-slate-300'
                                   : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900 border-transparent hover:border-slate-200'
                               }`}
-                              title="Thao tác khác"
+                              title={t('common.moreActions')}
                             >
                               <MoreVertical className="w-4 h-4" />
                             </button>
@@ -435,7 +437,7 @@ export const HostList: React.FC<HostListProps> = ({
                                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
                                 >
                                   <Radio className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>Kiểm tra Ping SSH</span>
+                                  <span>{t('hosts.testPing')}</span>
                                 </button>
 
                                 <button
@@ -446,7 +448,7 @@ export const HostList: React.FC<HostListProps> = ({
                                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
                                 >
                                   <Copy className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>Sao chép lệnh SSH</span>
+                                  <span>{t('hosts.copySsh')}</span>
                                 </button>
 
                                 <button
@@ -457,7 +459,7 @@ export const HostList: React.FC<HostListProps> = ({
                                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
                                 >
                                   <Edit2 className="w-3.5 h-3.5 text-slate-500" />
-                                  <span>Chỉnh sửa thông tin</span>
+                                  <span>{t('common.edit')}</span>
                                 </button>
 
                                 <div className="my-1 border-t border-slate-100" />
@@ -470,7 +472,7 @@ export const HostList: React.FC<HostListProps> = ({
                                   className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-rose-600 hover:bg-rose-50 transition-colors font-medium"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Xóa máy chủ</span>
+                                  <span>{t('common.delete')}</span>
                                 </button>
                               </div>
                             )}
@@ -484,7 +486,7 @@ export const HostList: React.FC<HostListProps> = ({
                 {filteredHosts.length === 0 && (
                   <tr>
                     <td colSpan={8} className="py-16 text-center text-slate-400 font-sans text-xs">
-                      Không có máy chủ nào trong môi trường này. Bấm "Thêm Máy Chủ" hoặc "Import Config" để bắt đầu.
+                      {t('hosts.empty')}
                     </td>
                   </tr>
                 )}
@@ -625,14 +627,14 @@ export const HostList: React.FC<HostListProps> = ({
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-950 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 animate-modal border border-slate-800">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-xs font-semibold">Đã chọn {selectedHostIds.length} máy chủ</span>
+            <span className="text-xs font-semibold">{t('hosts.selected')}: {selectedHostIds.length}</span>
           </div>
           <div className="h-4 w-px bg-slate-800" />
           <button
             onClick={() => setSelectedHostIds([])}
             className="text-xs text-slate-400 hover:text-white transition"
           >
-            Bỏ chọn
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => {
@@ -642,7 +644,7 @@ export const HostList: React.FC<HostListProps> = ({
             className="h-8 px-4 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shadow-xs"
           >
             <Zap className="w-3.5 h-3.5 fill-current" />
-            <span>Chạy Multi-Exec ({selectedHostIds.length} máy)</span>
+            <span>{t('hosts.multiExec')} ({selectedHostIds.length})</span>
           </button>
         </div>
       )}

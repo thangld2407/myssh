@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Terminal, Shield, ArrowRight, CheckCircle2, Lock, KeyRound, Sparkles, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export const SetupWizard: React.FC = () => {
+  const { t } = useTranslation();
   const { setup } = useAuth();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('admin');
@@ -37,17 +40,17 @@ export const SetupWizard: React.FC = () => {
     setTouched({ username: true, password: true, confirmPassword: true });
 
     if (!username.trim()) {
-      setError('Vui lòng nhập tên tài khoản Admin.');
+      setError(t('setupWizard.usernameRequired'));
       return;
     }
 
     if (password.length < 8) {
-      setError('Mật khẩu quản trị phải có độ dài ít nhất 8 ký tự.');
+      setError(t('setupWizard.shortPassword'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Mật khẩu xác nhận không khớp. Vui lòng kiểm tra lại.');
+      setError(t('setupWizard.passwordMismatch'));
       return;
     }
 
@@ -55,14 +58,17 @@ export const SetupWizard: React.FC = () => {
     try {
       await setup(username.trim(), password, fullName.trim() || undefined);
     } catch (err: any) {
-      setError(err.message || 'Lỗi khi khởi tạo tài khoản quản trị.');
+      setError(err.message || t('common.error'));
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="h-screen w-screen bg-[#F8FAFC] flex items-center justify-center p-4 select-none">
+    <div className="h-screen w-screen bg-[#F8FAFC] flex items-center justify-center p-4 select-none relative">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher variant="badge" />
+      </div>
       <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md p-8 shadow-2xl shadow-slate-200/80 animate-modal">
         {/* Wizard Header */}
         <div className="flex items-center space-x-3 mb-6 pb-4 border-b border-slate-100">
@@ -71,12 +77,12 @@ export const SetupWizard: React.FC = () => {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-slate-900 tracking-tight">Khởi Tạo Hệ Thống</h1>
+              <h1 className="text-base font-bold text-slate-900 tracking-tight">{t('setupWizard.title')}</h1>
               <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-mono font-semibold">
-                Setup Wizard
+                {t('setupWizard.badge')}
               </span>
             </div>
-            <p className="text-xs text-slate-500 font-normal">Thiết lập tài khoản Quản trị viên Master an toàn</p>
+            <p className="text-xs text-slate-500 font-normal">{t('setupWizard.subtitle')}</p>
           </div>
         </div>
 
@@ -90,20 +96,20 @@ export const SetupWizard: React.FC = () => {
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Họ và tên người quản trị
+              {t('setupWizard.fullName')}
             </label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="vd: Thang Le (DevOps Lead)"
+              placeholder={t('setupWizard.fullNamePlaceholder')}
               className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Tên đăng nhập Admin <span className="text-rose-500">*</span>
+              {t('auth.username')} <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -120,14 +126,14 @@ export const SetupWizard: React.FC = () => {
             {touched.username && !username.trim() && (
               <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1">
                 <AlertCircle className="w-3 h-3 shrink-0" />
-                <span>Vui lòng nhập tên tài khoản Admin.</span>
+                <span>{t('setupWizard.usernameRequired')}</span>
               </p>
             )}
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Mật khẩu quản trị mới <span className="text-rose-500">*</span>
+              {t('auth.password')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -135,7 +141,7 @@ export const SetupWizard: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setTouched((p) => ({ ...p, password: true }))}
-                placeholder="Tối thiểu 8 ký tự..."
+                placeholder="••••••••"
                 className={`w-full h-10 pl-3.5 pr-10 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition font-mono ${
                   touched.password && isPasswordShort
                     ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
@@ -156,7 +162,7 @@ export const SetupWizard: React.FC = () => {
             {touched.password && isPasswordShort && (
               <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1">
                 <AlertCircle className="w-3 h-3 shrink-0" />
-                <span>Mật khẩu phải có tối thiểu 8 ký tự.</span>
+                <span>{t('setupWizard.shortPassword')}</span>
               </p>
             )}
 
@@ -178,9 +184,15 @@ export const SetupWizard: React.FC = () => {
                   />
                 </div>
                 <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-                  <span>Độ phức tạp</span>
+                  <span>{t('setupWizard.passwordStrength')}</span>
                   <span className="font-semibold">
-                    {strength <= 25 ? 'Yếu' : strength <= 50 ? 'Trung bình' : strength <= 75 ? 'Khá' : 'Mạnh'}
+                    {strength <= 25
+                      ? t('setupWizard.weak')
+                      : strength <= 50
+                      ? t('setupWizard.medium')
+                      : strength <= 75
+                      ? t('setupWizard.fair')
+                      : t('setupWizard.strong')}
                   </span>
                 </div>
               </div>
@@ -189,7 +201,7 @@ export const SetupWizard: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Xác nhận mật khẩu <span className="text-rose-500">*</span>
+              {t('setupWizard.confirmPassword')} <span className="text-rose-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -197,7 +209,7 @@ export const SetupWizard: React.FC = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 onBlur={() => setTouched((p) => ({ ...p, confirmPassword: true }))}
-                placeholder="Nhập lại mật khẩu..."
+                placeholder={t('setupWizard.confirmPasswordPlaceholder')}
                 className={`w-full h-10 pl-3.5 pr-10 bg-slate-50 border rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white transition font-mono ${
                   touched.confirmPassword && isMismatch
                     ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500'
@@ -217,7 +229,7 @@ export const SetupWizard: React.FC = () => {
             {touched.confirmPassword && isMismatch && (
               <p className="flex items-center gap-1 text-[11px] text-rose-600 font-medium mt-1">
                 <AlertCircle className="w-3 h-3 shrink-0" />
-                <span>Mật khẩu xác nhận không khớp.</span>
+                <span>{t('setupWizard.passwordMismatch')}</span>
               </p>
             )}
           </div>
@@ -230,11 +242,11 @@ export const SetupWizard: React.FC = () => {
             {submitting ? (
               <>
                 <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Đang khởi tạo hệ thống...</span>
+                <span>{t('setupWizard.submitting')}</span>
               </>
             ) : (
               <>
-                <span>Hoàn tất thiết lập & Khởi động</span>
+                <span>{t('setupWizard.submit')}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -243,7 +255,7 @@ export const SetupWizard: React.FC = () => {
 
         <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-center gap-2 text-[11px] text-slate-500">
           <Shield className="w-3.5 h-3.5 text-emerald-600" />
-          <span>Bảo mật AES-256-GCM • Không có mật khẩu mặc định</span>
+          <span>{t('setupWizard.securityNotice')}</span>
         </div>
       </div>
     </div>

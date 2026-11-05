@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Server,
   KeyRound,
@@ -38,6 +39,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSponsor,
   features,
 }) => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const folders = Array.from(new Set(hosts.map((h) => h.folder || 'General')));
 
@@ -74,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center gap-2.5">
                 <Server className={`w-4 h-4 ${activeView === 'hosts' ? 'text-slate-900' : 'text-slate-500'}`} />
-                <span>Máy chủ (Hosts)</span>
+                <span>{t('sidebar.hosts')}</span>
               </div>
               <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-slate-200/60 text-slate-700 font-semibold">
                 {hosts.length}
@@ -90,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }`}
             >
               <KeyRound className={`w-4 h-4 ${activeView === 'credentials' ? 'text-slate-900' : 'text-slate-500'}`} />
-              <span>Key Vault</span>
+              <span>{t('sidebar.keyVault')}</span>
             </button>
 
             {features?.enable_tunnels !== false && (
@@ -103,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <Network className={`w-4 h-4 ${activeView === 'tunnels' ? 'text-slate-900' : 'text-slate-500'}`} />
-                <span>Port Forwarding</span>
+                <span>{t('sidebar.tunnels')}</span>
               </button>
             )}
 
@@ -117,7 +119,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <History className={`w-4 h-4 ${activeView === 'audit' ? 'text-slate-900' : 'text-slate-500'}`} />
-                <span>Session Audit</span>
+                <span>{t('sidebar.audit')}</span>
               </button>
             )}
 
@@ -127,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full h-9 px-3 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98] text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               >
                 <Code2 className="w-4 h-4 text-emerald-600" />
-                <span>Lệnh mẫu (Snippets)</span>
+                <span>{t('sidebar.snippets')}</span>
               </button>
             )}
           </div>
@@ -135,11 +137,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Folder Hierarchy */}
           <div className="space-y-1">
             <div className="px-2.5 pb-1 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-400">
-              <span>Môi trường</span>
+              <span>{t('sidebar.environments')}</span>
               <button
                 onClick={onAddHost}
                 className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all duration-150 active:scale-90"
-                title="Thêm máy chủ mới"
+                title={t('sidebar.addHost')}
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -158,7 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <span className="flex items-center gap-2.5">
                 <Folder className="w-4 h-4 text-slate-500" />
-                Tất cả
+                {t('sidebar.allServers')}
               </span>
               <span className="text-xs font-mono text-slate-500">{hosts.length}</span>
             </button>
@@ -198,7 +200,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center gap-2.5">
                   <Heart className="w-4 h-4 text-rose-500 fill-rose-50" />
-                  <span>Ủng hộ dự án</span>
+                  <span>{t('sidebar.sponsor')}</span>
                 </div>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white text-rose-600 font-semibold border border-rose-100 shadow-2xs">
                   Sponsor
@@ -224,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           <button
             onClick={logout}
-            title="Đăng xuất"
+            title={t('sidebar.logout')}
             className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-all duration-150 active:scale-90"
           >
             <LogOut className="w-4 h-4" />
