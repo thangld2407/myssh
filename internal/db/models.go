@@ -117,3 +117,15 @@ type KubePortForward struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
+
+type AuditLog struct {
+	ID           string    `gorm:"primaryKey;size:36" json:"id"`
+	UserID       string    `gorm:"size:36;index" json:"user_id"`
+	Username     string    `gorm:"size:64;index" json:"username"`
+	Action       string    `gorm:"size:64;index" json:"action"`
+	ResourceType string    `gorm:"size:64;index" json:"resource_type"`
+	ResourceID   string    `gorm:"size:128" json:"resource_id"`
+	Detail       string    `gorm:"type:text" json:"detail"`
+	ClientIP     string    `gorm:"size:64" json:"client_ip"`
+	CreatedAt    time.Time `gorm:"index" json:"created_at"`
+}

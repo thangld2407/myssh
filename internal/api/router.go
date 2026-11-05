@@ -73,6 +73,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	tunnHandler := NewTunnelHandler(cfg)
 	snipHandler := NewSnippetHandler(cfg)
 	k8sHandler := NewK8sHandler(cfg)
+	auditHandler := NewAuditHandler(cfg)
 
 	// Public System & Auth routes
 	api := r.Group("/api")
@@ -109,6 +110,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	// Protected routes
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	protected.Use(middleware.AuditMiddleware())
 	{
 		// Auth & 2FA
 		protected.GET("/auth/me", authHandler.Me)
@@ -164,6 +166,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		{
 			audit.GET("/sessions", middleware.RequireRole("admin", "member", "viewer"), sessHandler.List)
 			audit.GET("/sessions/:id/recording", middleware.RequireRole("admin", "member", "viewer"), sessHandler.GetRecording)
+			audit.GET("/logs", middleware.RequireRole("admin"), auditHandler.ListLogs)
 		}
 
 		// Tunnels
