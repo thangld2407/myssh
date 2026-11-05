@@ -2,7 +2,10 @@ package api
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"image/png"
 	"net/http"
@@ -13,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/myssh/myssh/internal/config"
+	"github.com/myssh/myssh/internal/crypto"
 	"github.com/myssh/myssh/internal/db"
 	"github.com/myssh/myssh/internal/middleware"
 	"github.com/pquerna/otp/totp"
@@ -26,10 +30,26 @@ type failedAttempt struct {
 
 const maxAttemptsMapSize = 10000
 
+type pending2FAEntry struct {
+	secret    string
+	expiresAt time.Time
+}
+
 var (
 	loginAttempts   = make(map[string]*failedAttempt)
 	loginAttemptsMu sync.Mutex
+
+	pending2FAMu  sync.RWMutex
+	pending2FAMap = make(map[string]pending2FAEntry)
 )
+
+func generateRecoveryCode() string {
+	b := make([]byte, 4)
+	_, _ = rand.Read(b)
+	part1 := hex.EncodeToString(b[:2])
+	part2 := hex.EncodeToString(b[2:4])
+	return fmt.Sprintf("%s-%s", strings.ToUpper(part1), strings.ToUpper(part2))
+}
 
 func checkRateLimit(cfg *config.Config, key string) error {
 	if cfg != nil && !cfg.RateLimitEnabled {
@@ -289,7 +309,40 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			return
 		}
 
-		if !totp.Validate(code, user.TwoFactorSecret) {
+		plainSecret := user.TwoFactorSecret
+		if user.TwoFactorNonce != "" {
+			dec, err := crypto.Decrypt(user.TwoFactorSecret, user.TwoFactorNonce, h.cfg.MasterKey)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error_code": "AUTH_2FA_UPDATE_FAILED",
+					"error":      "Failed to decrypt two-factor credentials",
+				})
+				return
+			}
+			plainSecret = string(dec)
+		}
+
+		totpValid := totp.Validate(code, plainSecret)
+		recoveryValid := false
+
+		if !totpValid && user.RecoveryCodes != "" {
+			var hashes []string
+			if err := json.Unmarshal([]byte(user.RecoveryCodes), &hashes); err == nil {
+				for i, hVal := range hashes {
+					if bcrypt.CompareHashAndPassword([]byte(hVal), []byte(code)) == nil {
+						recoveryValid = true
+						// One-time use: evict matched code and persist remaining
+						hashes = append(hashes[:i], hashes[i+1:]...)
+						newHashesJSON, _ := json.Marshal(hashes)
+						user.RecoveryCodes = string(newHashesJSON)
+						_ = db.DB.Model(&user).Update("recovery_codes", user.RecoveryCodes)
+						break
+					}
+				}
+			}
+		}
+
+		if !totpValid && !recoveryValid {
 			recordFailedAttempt(h.cfg, ipKey)
 			recordFailedAttempt(h.cfg, userKey)
 			c.JSON(http.StatusUnauthorized, gin.H{
@@ -402,6 +455,14 @@ func (h *AuthHandler) Generate2FA(c *gin.Context) {
 		return
 	}
 
+	// Cache pending secret in server-side memory for 10 minutes
+	pending2FAMu.Lock()
+	pending2FAMap[fmt.Sprint(userID)] = pending2FAEntry{
+		secret:    key.Secret(),
+		expiresAt: time.Now().Add(10 * time.Minute),
+	}
+	pending2FAMu.Unlock()
+
 	var buf bytes.Buffer
 	var qrDataURL string
 	img, err := key.Image(220, 220)
@@ -419,7 +480,7 @@ func (h *AuthHandler) Generate2FA(c *gin.Context) {
 }
 
 type Enable2FARequest struct {
-	Secret string `json:"secret" binding:"required"`
+	Secret string `json:"secret"` // Optional: server-side pending secret takes precedence
 	Code   string `json:"code" binding:"required"`
 }
 
@@ -445,10 +506,20 @@ func (h *AuthHandler) Enable2FA(c *gin.Context) {
 		return
 	}
 
-	cleanSecret := strings.TrimSpace(req.Secret)
 	cleanCode := strings.TrimSpace(req.Code)
 
-	if !totp.Validate(cleanCode, cleanSecret) {
+	// Retrieve pending secret from server-side cache first; fallback to client-provided secret
+	var secretToVerify string
+	pending2FAMu.Lock()
+	if entry, ok := pending2FAMap[fmt.Sprint(userID)]; ok && time.Now().Before(entry.expiresAt) {
+		secretToVerify = entry.secret
+		delete(pending2FAMap, fmt.Sprint(userID))
+	} else if req.Secret != "" {
+		secretToVerify = strings.TrimSpace(req.Secret)
+	}
+	pending2FAMu.Unlock()
+
+	if secretToVerify == "" || !totp.Validate(cleanCode, secretToVerify) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error_code": "AUTH_2FA_INVALID_CODE",
 			"error":      "Invalid or expired 2FA verification code",
@@ -456,8 +527,31 @@ func (h *AuthHandler) Enable2FA(c *gin.Context) {
 		return
 	}
 
+	// Encrypt the TOTP secret with MasterKey
+	encSecret, nonce, err := crypto.Encrypt([]byte(secretToVerify), h.cfg.MasterKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error_code": "AUTH_2FA_UPDATE_FAILED",
+			"error":      "Failed to encrypt 2FA secret: " + err.Error(),
+		})
+		return
+	}
+
+	// Generate 8 one-time recovery codes stored as bcrypt hashes
+	recoveryCodes := make([]string, 8)
+	recoveryHashes := make([]string, 8)
+	for i := 0; i < 8; i++ {
+		code := generateRecoveryCode()
+		recoveryCodes[i] = code
+		hash, _ := bcrypt.GenerateFromPassword([]byte(code), bcrypt.DefaultCost)
+		recoveryHashes[i] = string(hash)
+	}
+	hashesJSON, _ := json.Marshal(recoveryHashes)
+
 	user.TwoFactorEnabled = true
-	user.TwoFactorSecret = cleanSecret
+	user.TwoFactorSecret = encSecret
+	user.TwoFactorNonce = nonce
+	user.RecoveryCodes = string(hashesJSON)
 	user.UpdatedAt = time.Now()
 
 	if err := db.DB.Save(&user).Error; err != nil {
@@ -469,8 +563,9 @@ func (h *AuthHandler) Enable2FA(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Two-factor authentication (2FA) enabled successfully",
+		"success":        true,
+		"message":        "Two-factor authentication (2FA) enabled successfully",
+		"recovery_codes": recoveryCodes,
 	})
 }
 
@@ -510,6 +605,8 @@ func (h *AuthHandler) Disable2FA(c *gin.Context) {
 
 	user.TwoFactorEnabled = false
 	user.TwoFactorSecret = ""
+	user.TwoFactorNonce = ""
+	user.RecoveryCodes = ""
 	user.UpdatedAt = time.Now()
 
 	if err := db.DB.Save(&user).Error; err != nil {

@@ -110,8 +110,8 @@ export const api = {
     request<{ secret: string; otpauth_url: string; qr_code: string }>('/auth/2fa/generate', {
       method: 'POST',
     }),
-  enable2FA: (data: { secret: string; code: string }) =>
-    request<{ success: boolean; message: string }>('/auth/2fa/enable', {
+  enable2FA: (data: { secret?: string; code: string }) =>
+    request<{ success: boolean; message: string; recovery_codes?: string[] }>('/auth/2fa/enable', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

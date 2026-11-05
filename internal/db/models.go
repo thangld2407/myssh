@@ -11,7 +11,9 @@ type User struct {
 	FullName          string    `gorm:"size:128" json:"full_name"`
 	Role              string    `gorm:"size:32;default:'admin'" json:"role"` // admin, member, viewer
 	TwoFactorEnabled  bool      `gorm:"default:false" json:"two_factor_enabled"`
-	TwoFactorSecret   string    `gorm:"size:128" json:"-"`
+	TwoFactorSecret   string    `gorm:"type:text" json:"-"`
+	TwoFactorNonce    string    `gorm:"size:64" json:"-"`
+	RecoveryCodes     string    `gorm:"type:text" json:"-"`
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }

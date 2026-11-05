@@ -487,3 +487,122 @@ func TestErrorCodes_AuthenticationAndFeatureGuard(t *testing.T) {
 		t.Errorf("Expected error_code FEATURE_DISABLED, got %v", res["error_code"])
 	}
 }
+
+func Test2FA_SecretEncryptionAndRecoveryCodes(t *testing.T) {
+	setupTestDB(t)
+	db.DB.Exec("DELETE FROM users")
+
+	cfg := &config.Config{
+		JWTSecret: "test-jwt-secret-xyz-long-enough!",
+		MasterKey: "test-master-key-32-bytes-secure!",
+	}
+	r := SetupRouter(cfg)
+
+	// 1. Setup admin user
+	setupBody, _ := json.Marshal(map[string]string{
+		"username":  "twofauser",
+		"password":  "SecretPassword123!",
+		"full_name": "2FA Admin",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/auth/setup", bytes.NewBuffer(setupBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Setup failed: %s", w.Body.String())
+	}
+	var setupRes map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &setupRes)
+	token := setupRes["token"].(string)
+
+	// 2. Generate 2FA
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/2fa/generate", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Generate 2FA failed: %s", w.Body.String())
+	}
+	var genRes map[string]interface{}
+	_ = json.Unmarshal(w.Body.Bytes(), &genRes)
+	plainSecret := genRes["secret"].(string)
+
+	validCode, _ := totpGenerateCode(plainSecret)
+
+	// 3. Enable 2FA WITHOUT providing secret in body (must use server-side cached pending secret)
+	enableBody, _ := json.Marshal(map[string]string{
+		"code": validCode,
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/2fa/enable", bytes.NewBuffer(enableBody))
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Enable 2FA using server-side pending secret failed: %s", w.Body.String())
+	}
+
+	var enableRes struct {
+		Success       bool     `json:"success"`
+		RecoveryCodes []string `json:"recovery_codes"`
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &enableRes)
+	if len(enableRes.RecoveryCodes) != 8 {
+		t.Fatalf("Expected 8 recovery codes, got %d", len(enableRes.RecoveryCodes))
+	}
+
+	// 4. Verify SQLite DB has encrypted secret, non-empty nonce, and NOT plaintext
+	var dbUser db.User
+	db.DB.First(&dbUser, "username = ?", "twofauser")
+	if dbUser.TwoFactorSecret == plainSecret {
+		t.Errorf("DB TwoFactorSecret must NOT be plaintext! Got: %s", dbUser.TwoFactorSecret)
+	}
+	if dbUser.TwoFactorNonce == "" {
+		t.Errorf("DB TwoFactorNonce must be set for encrypted secret")
+	}
+
+	// 5. Test login with one-time recovery code
+	recoveryCodeToUse := enableRes.RecoveryCodes[0]
+
+	loginRecoveryBody, _ := json.Marshal(map[string]string{
+		"username": "twofauser",
+		"password": "SecretPassword123!",
+		"code":     recoveryCodeToUse,
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(loginRecoveryBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected login with recovery code to succeed, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// 6. Test login with the SAME recovery code again -> MUST FAIL (one-time use)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(loginRecoveryBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("Reused recovery code must fail with 401 Unauthorized, got %d", w.Code)
+	}
+
+	// 7. Test backward compatibility: plaintext secret (nonce == "")
+	db.DB.Model(&dbUser).Updates(map[string]interface{}{
+		"two_factor_secret": plainSecret,
+		"two_factor_nonce":  "",
+	})
+
+	totpCode2, _ := totpGenerateCode(plainSecret)
+	loginLegacyBody, _ := json.Marshal(map[string]string{
+		"username": "twofauser",
+		"password": "SecretPassword123!",
+		"code":     totpCode2,
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/auth/login", bytes.NewBuffer(loginLegacyBody))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Legacy plaintext 2FA login should succeed, got %d: %s", w.Code, w.Body.String())
+	}
+}
