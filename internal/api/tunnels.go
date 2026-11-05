@@ -50,14 +50,15 @@ func (h *TunnelHandler) List(c *gin.Context) {
 	var tunnels []db.Tunnel
 	query := db.DB.Preload("Host").Order("created_at desc")
 
-	// Ownership scoping: Non-admin users can only view their own tunnels
-	roleVal, _ := c.Get("role")
-	roleStr, _ := roleVal.(string)
-	if !strings.EqualFold(roleStr, "admin") {
-		userIDVal, _ := c.Get("user_id")
-		if userIDStr, ok := userIDVal.(string); ok && userIDStr != "" {
-			query = query.Where("user_id = ?", userIDStr)
-		}
+	// Ownership scoping (fail-closed): Non-admin users can only view their own tunnels
+	var err error
+	query, err = ScopeToOwner(c, query)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error_code": "FORBIDDEN_ROLE",
+			"error":      err.Error(),
+		})
+		return
 	}
 
 	if err := query.Find(&tunnels).Error; err != nil {

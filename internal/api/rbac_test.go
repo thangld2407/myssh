@@ -217,4 +217,25 @@ func TestSessionAndTunnelOwnershipScoping(t *testing.T) {
 	if len(allTunnels) != 2 {
 		t.Errorf("Admin should see all tunnels, got %d", len(allTunnels))
 	}
+
+	// F23: Alice attempts to access Bob's session recording -> 403 Forbidden
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/audit/sessions/sess-bob/recording", nil)
+	req.Header.Set("Authorization", "Bearer "+tokenA)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Alice must receive 403 Forbidden when requesting Bob's recording, got %d", w.Code)
+	}
+
+	// F23: Non-admin with empty user_id -> Fail-closed 403 Forbidden
+	noUserMember := &db.User{ID: "", Username: "nouser", Role: "member"}
+	badToken, _ := middleware.GenerateToken(noUserMember, cfg.JWTSecret)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("GET", "/api/audit/sessions", nil)
+	req.Header.Set("Authorization", "Bearer "+badToken)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("Non-admin user with empty user_id must fail-closed with 403 Forbidden, got %d", w.Code)
+	}
 }

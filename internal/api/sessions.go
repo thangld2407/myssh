@@ -23,14 +23,15 @@ func (h *SessionHandler) List(c *gin.Context) {
 	var sessions []db.Session
 	query := db.DB.Preload("User").Order("started_at desc")
 
-	// Ownership scoping: Non-admin users can only view their own sessions
-	roleVal, _ := c.Get("role")
-	roleStr, _ := roleVal.(string)
-	if !strings.EqualFold(roleStr, "admin") {
-		userIDVal, _ := c.Get("user_id")
-		if userIDStr, ok := userIDVal.(string); ok && userIDStr != "" {
-			query = query.Where("user_id = ?", userIDStr)
-		}
+	// Ownership scoping (fail-closed): Non-admin users can only view their own sessions
+	var err error
+	query, err = ScopeToOwner(c, query)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error_code": "FORBIDDEN_ROLE",
+			"error":      err.Error(),
+		})
+		return
 	}
 
 	if hostID := c.Query("host_id"); hostID != "" {
@@ -51,6 +52,21 @@ func (h *SessionHandler) GetRecording(c *gin.Context) {
 	if err := db.DB.First(&session, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Session not found"})
 		return
+	}
+
+	// Ownership scoping: Non-admin users can only access their own session recordings
+	roleVal, _ := c.Get("role")
+	roleStr, _ := roleVal.(string)
+	if !strings.EqualFold(roleStr, "admin") {
+		userIDVal, _ := c.Get("user_id")
+		userIDStr, _ := userIDVal.(string)
+		if userIDStr == "" || session.UserID != userIDStr {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error_code": "FORBIDDEN_ROLE",
+				"error":      "Access denied: you do not have permission to view this session recording",
+			})
+			return
+		}
 	}
 
 	if session.RecordingPath == "" {

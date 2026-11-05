@@ -28,6 +28,11 @@ func TestSessionEndpointsAndPathTraversal(t *testing.T) {
 	handler := NewSessionHandler(cfg)
 
 	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("role", "admin")
+		c.Set("user_id", "user-1")
+		c.Next()
+	})
 	r.GET("/api/audit/sessions", handler.List)
 	r.GET("/api/audit/sessions/:id/recording", handler.GetRecording)
 
