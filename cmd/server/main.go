@@ -65,9 +65,10 @@ func main() {
 	<-ctx.Done()
 	log.Println("🛑 Shutdown signal received. Initiating graceful shutdown...")
 
-	// 7. Stop all active SSH tunnels and Kubernetes port-forwards
+	// 7. Stop all active SSH tunnels and Kubernetes port-forwards, and close connection pool
 	sshhub.Hub.StopAll()
 	k8shub.GlobalPFManager.StopAll()
+	sshhub.GlobalPool.CloseAll()
 
 	// 8. Reconcile database state: mark all active/connecting sessions as closed
 	db.ReconcileState(db.DB)

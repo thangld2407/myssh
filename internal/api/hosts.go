@@ -150,6 +150,7 @@ func (h *HostHandler) Update(c *gin.Context) {
 		return
 	}
 
+	sshhub.GlobalPool.Invalidate(host.ID)
 	db.DB.Preload("Credential").First(&host, "id = ?", host.ID)
 	c.JSON(http.StatusOK, host)
 }
@@ -166,6 +167,7 @@ func (h *HostHandler) ResetFingerprint(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reset host key fingerprint"})
 		return
 	}
+	sshhub.GlobalPool.Invalidate(host.ID)
 	host.HostKeyFingerprint = ""
 	db.DB.Preload("Credential").First(&host, "id = ?", host.ID)
 	c.JSON(http.StatusOK, host)
@@ -177,6 +179,7 @@ func (h *HostHandler) Delete(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete host"})
 		return
 	}
+	sshhub.GlobalPool.Invalidate(id)
 	c.JSON(http.StatusOK, gin.H{"message": "Host deleted successfully"})
 }
 

@@ -39,7 +39,7 @@ func (h *SFTPHandler) getBridge(c *gin.Context, hostID string) (*sshhub.SFTPBrid
 		}
 	}
 
-	return sshhub.OpenSFTP(info)
+	return sshhub.GetPooledSFTP(info)
 }
 
 func (h *SFTPHandler) List(c *gin.Context) {

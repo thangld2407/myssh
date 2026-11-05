@@ -90,13 +90,21 @@ df -k / 2>/dev/null | tail -n 1 | awk "{print \"DISK_TOTAL_KB=\" \$2; print \"DI
 '`
 
 func CollectServerMetrics(info SSHConnectionInfo) (*ServerMetrics, error) {
-	client, err := DialTarget(info)
+	client, err := GlobalPool.GetSSHClient(info)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to host: %w", err)
 	}
-	defer client.Close()
 
 	session, err := client.NewSession()
+	if err != nil && info.Host != nil && IsConnError(err) {
+		// Stale pooled connection dropped while idle: invalidate and retry once with fresh connection
+		GlobalPool.Invalidate(info.Host.ID)
+		client, err = GlobalPool.GetSSHClient(info)
+		if err != nil {
+			return nil, fmt.Errorf("failed to reconnect to host: %w", err)
+		}
+		session, err = client.NewSession()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to open SSH session: %w", err)
 	}
