@@ -12,7 +12,7 @@ data/recordings/*
 node_modules/
 web/node_modules/
 web/dist/*
-!web/dist/.gitkeep
+!web/dist/index.html
 web/.pnpm-store/
 
 # Secrets & Environment variables
