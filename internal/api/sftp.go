@@ -105,6 +105,19 @@ func (h *SFTPHandler) Upload(c *gin.Context) {
 		return
 	}
 
+	maxUploadMB := 100
+	if h.cfg != nil && h.cfg.MaxUploadSizeMB > 0 {
+		maxUploadMB = h.cfg.MaxUploadSizeMB
+	}
+	maxBytes := int64(maxUploadMB) * 1024 * 1024
+	if fileHeader.Size > maxBytes {
+		c.JSON(http.StatusRequestEntityTooLarge, gin.H{
+			"error_code": "FILE_TOO_LARGE",
+			"error":      fmt.Sprintf("Uploaded file size (%d bytes) exceeds maximum limit of %d MB", fileHeader.Size, maxUploadMB),
+		})
+		return
+	}
+
 	srcFile, err := fileHeader.Open()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read uploaded file"})

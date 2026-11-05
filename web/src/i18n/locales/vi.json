@@ -361,6 +361,7 @@
     "AUTH_2FA_CONFIRM_PASSWORD_REQUIRED": "Vui lòng nhập mật khẩu xác nhận.",
     "AUTH_2FA_PASSWORD_MISMATCH": "Mật khẩu xác nhận không chính xác.",
     "AUTH_2FA_DISABLE_FAILED": "Không thể tắt xác thực hai yếu tố (2FA).",
+    "FILE_TOO_LARGE": "Tệp tải lên vượt quá dung lượng cho phép.",
     "FEATURE_DISABLED": "Tính năng này đã bị vô hiệu hóa trong cấu hình hệ thống.",
     "FORBIDDEN_ROLE": "Bạn không có quyền thực hiện hành động này."
   }

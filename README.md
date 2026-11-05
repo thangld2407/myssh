@@ -142,6 +142,7 @@ MySSH is built with a zero-trust mindset:
 | `RECORDING_RETENTION_DAYS` | `30` | Auto-prune `.cast` session recordings older than N days |
 | `RECORDING_MAX_SIZE_MB` | `50` | Maximum file size limit in MB per terminal recording session |
 | `RECORD_INPUT_KEYSTROKES` | `false` | Enable capturing client keystroke input (`"i"` events) in recordings |
+| `MAX_UPLOAD_SIZE_MB` | `100` | Maximum file upload size limit in MB for SFTP transfers |
 | `MASTER_KEY` | *(Auto-generated / Set)* | 32-byte master encryption key for AES-256-GCM credential vault |
 | `JWT_SECRET` | *(Auto-generated / Set)* | Secret string used for signing authentication JWT tokens |
 | `RATE_LIMIT_ENABLED` | `true` | Enable brute-force protection rate limiter |

@@ -361,6 +361,7 @@
     "AUTH_2FA_CONFIRM_PASSWORD_REQUIRED": "Please enter your password to confirm.",
     "AUTH_2FA_PASSWORD_MISMATCH": "Incorrect confirmation password.",
     "AUTH_2FA_DISABLE_FAILED": "Failed to disable two-factor authentication.",
+    "FILE_TOO_LARGE": "Uploaded file exceeds the maximum allowed file size limit.",
     "FEATURE_DISABLED": "This feature has been disabled in system configuration.",
     "FORBIDDEN_ROLE": "You do not have permission to perform this action."
   }

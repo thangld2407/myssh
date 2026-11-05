@@ -17,6 +17,7 @@ import (
 
 func SetupRouter(cfg *config.Config) *gin.Engine {
 	r := gin.New()
+	r.MaxMultipartMemory = 8 << 20 // 8MB in-memory buffer for multipart uploads
 	r.Use(gin.Recovery())
 
 	// Custom access logger: strictly strips raw query strings from logs (redacting tokens, tickets, paths)
