@@ -1,7 +1,10 @@
 package api
 
 import (
+	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +13,20 @@ import (
 	"github.com/myssh/myssh/internal/db"
 	"github.com/myssh/myssh/internal/sshhub"
 )
+
+// isAllowedTunnelBindHost verifies that bindHost is a secure loopback address unless public binding is explicitly enabled.
+func isAllowedTunnelBindHost(bindHost string) bool {
+	h := strings.ToLower(strings.TrimSpace(bindHost))
+	if h == "127.0.0.1" || h == "localhost" || h == "::1" {
+		return true
+	}
+	envVal := strings.ToLower(strings.TrimSpace(os.Getenv("FEATURE_TUNNEL_PUBLIC_BIND")))
+	if envVal == "true" || envVal == "1" || envVal == "yes" {
+		log.Printf("[TUNNEL] WARNING: FEATURE_TUNNEL_PUBLIC_BIND enabled. Allowing non-loopback bind_host '%s'. Listener is exposed on network!\n", bindHost)
+		return true
+	}
+	return false
+}
 
 type TunnelHandler struct {
 	cfg *config.Config
@@ -76,6 +93,9 @@ func (h *TunnelHandler) Create(c *gin.Context) {
 	}
 	if req.BindHost == "" {
 		req.BindHost = "127.0.0.1"
+	} else if !isAllowedTunnelBindHost(req.BindHost) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Insecure bind_host: only loopback addresses (127.0.0.1, localhost, ::1) are permitted"})
+		return
 	}
 
 	tunnel := db.Tunnel{
@@ -112,6 +132,11 @@ func (h *TunnelHandler) Start(c *gin.Context) {
 
 	if tunnel.Host == nil || tunnel.Host.Credential == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Host or credential missing for this tunnel"})
+		return
+	}
+
+	if !isAllowedTunnelBindHost(tunnel.BindHost) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Insecure bind_host: only loopback addresses (127.0.0.1, localhost, ::1) are permitted"})
 		return
 	}
 

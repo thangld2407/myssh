@@ -26,6 +26,7 @@ type FeatureFlags struct {
 	EnableSponsor         bool `json:"enable_sponsor"`
 	EnableK8s             bool `json:"enable_k8s"`
 	EnableStrictHostKey   bool `json:"strict_host_key"`
+	EnableTunnelPublicBind bool `json:"enable_tunnel_public_bind"`
 }
 
 type Config struct {
@@ -153,6 +154,7 @@ func Load() *Config {
 		EnableSponsor:         getEnvBool("FEATURE_SPONSOR", true),
 		EnableK8s:             getEnvBool("FEATURE_K8S", true),
 		EnableStrictHostKey:   getEnvBool("FEATURE_STRICT_HOST_KEY", true),
+		EnableTunnelPublicBind: getEnvBool("FEATURE_TUNNEL_PUBLIC_BIND", false),
 	}
 
 	// Resolve secrets (JWT_SECRET, MASTER_KEY, KDF_SALT)

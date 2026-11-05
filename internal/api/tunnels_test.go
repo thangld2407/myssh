@@ -28,6 +28,7 @@ func TestTunnelEndpoints(t *testing.T) {
 	})
 	r.GET("/api/tunnels", handler.List)
 	r.POST("/api/tunnels", handler.Create)
+	r.POST("/api/tunnels/:id/start", handler.Start)
 	r.POST("/api/tunnels/:id/stop", handler.Stop)
 	r.DELETE("/api/tunnels/:id", handler.Delete)
 
@@ -96,5 +97,85 @@ func TestTunnelEndpoints(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected 200 OK for delete, got %d", w.Code)
+	}
+}
+
+func TestTunnelBindHostValidation(t *testing.T) {
+	setupTestDB(t)
+
+	cfg := &config.Config{
+		MasterKey: "test-master-key-32-bytes-long!!",
+	}
+	handler := NewTunnelHandler(cfg)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("user_id", "admin-1")
+		c.Next()
+	})
+	r.POST("/api/tunnels", handler.Create)
+	r.POST("/api/tunnels/:id/start", handler.Start)
+
+	// 1. Reject bind_host 0.0.0.0
+	req0000 := CreateTunnelRequest{
+		HostID:     "host-1",
+		Name:       "Public Insecure Tunnel",
+		BindHost:   "0.0.0.0",
+		BindPort:   9001,
+		TargetHost: "internal-service",
+		TargetPort: 80,
+	}
+	b0, _ := json.Marshal(req0000)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/tunnels", bytes.NewBuffer(b0))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for bind_host 0.0.0.0, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// 2. Reject arbitrary private IP bind_host
+	reqIP := req0000
+	reqIP.BindHost = "192.168.1.100"
+	b1, _ := json.Marshal(reqIP)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/tunnels", bytes.NewBuffer(b1))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request for bind_host 192.168.1.100, got %d", w.Code)
+	}
+
+	// 3. Reject Start on existing DB record with insecure bind_host
+	badTunnel := db.Tunnel{
+		ID:         "tunnel-insecure-db",
+		UserID:     "admin-1",
+		HostID:     "host-1",
+		Name:       "Pre-existing Insecure Tunnel",
+		BindHost:   "0.0.0.0",
+		BindPort:   9002,
+		TargetHost: "internal",
+		TargetPort: 80,
+		Status:     "stopped",
+	}
+	db.DB.Create(&badTunnel)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/tunnels/"+badTunnel.ID+"/start", nil)
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request when attempting to start a 0.0.0.0 tunnel, got %d", w.Code)
+	}
+
+	// 4. Accept localhost and ::1
+	reqLocalhost := req0000
+	reqLocalhost.BindHost = "localhost"
+	b2, _ := json.Marshal(reqLocalhost)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/tunnels", bytes.NewBuffer(b2))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Errorf("Expected 201 Created for localhost bind_host, got %d", w.Code)
 	}
 }

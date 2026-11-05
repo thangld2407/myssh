@@ -5,6 +5,8 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"sync"
 
 	"golang.org/x/crypto/ssh"
@@ -41,6 +43,15 @@ func (h *TunnelHub) StartLocalTunnel(
 		return fmt.Errorf("tunnel %s is already running", id)
 	}
 	h.mu.Unlock()
+
+	hHost := strings.ToLower(strings.TrimSpace(bindHost))
+	if hHost != "127.0.0.1" && hHost != "localhost" && hHost != "::1" {
+		envVal := strings.ToLower(strings.TrimSpace(os.Getenv("FEATURE_TUNNEL_PUBLIC_BIND")))
+		if envVal != "true" && envVal != "1" && envVal != "yes" {
+			return fmt.Errorf("insecure bind_host '%s': only loopback addresses (127.0.0.1, localhost, ::1) are permitted", bindHost)
+		}
+		log.Printf("[TUNNEL] WARNING: FEATURE_TUNNEL_PUBLIC_BIND enabled. Binding non-loopback host %s:%d\n", bindHost, bindPort)
+	}
 
 	sshClient, err := DialTarget(info)
 	if err != nil {
