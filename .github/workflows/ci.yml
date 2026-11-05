@@ -10,10 +10,11 @@ on:
 permissions:
   contents: write
   packages: write
+  security-events: write
 
 jobs:
   backend-test:
-    name: Backend Unit Tests & Build
+    name: Backend Unit Tests & Quality Gates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -28,8 +29,21 @@ jobs:
       - name: Ensure embedded web assets directory exists
         run: mkdir -p web/dist && touch web/dist/index.html
 
-      - name: Run Go Unit Tests
-        run: go test -v -race ./...
+      - name: Run Go Vet
+        run: go vet ./...
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.61
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: '-no-fail -fmt=sarif -out=results.sarif ./...'
+
+      - name: Run Go Unit Tests with Race Detector and Coverage
+        run: go test -v -race -cover ./...
 
       - name: Build Go Binary
         run: go build -v -o bin/myssh ./cmd/server
@@ -51,11 +65,11 @@ jobs:
         with:
           version: 9
 
-      - name: Install Dependencies
-        run: cd web && pnpm install
+      - name: Install Dependencies (Frozen Lockfile)
+        run: cd web && pnpm install --frozen-lockfile
 
-      - name: Build Web Assets
-        run: cd web && pnpm build
+      - name: Typecheck and Build Web Assets
+        run: cd web && pnpm run build
 
   docker-publish:
     name: Multi-Arch Docker Build & Push
