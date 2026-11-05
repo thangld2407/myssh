@@ -17,7 +17,17 @@ var (
 	saltMu         sync.RWMutex
 	currentKDFSalt = []byte("myssh-secure-salt-v1")
 	legacyKDFSalt  = []byte("myssh-secure-salt-v1")
+
+	keyCacheMu sync.RWMutex
+	keyCache   = make(map[string][]byte)
 )
+
+// ResetKeyCache clears the in-memory derived key cache (used primarily for benchmarking/testing).
+func ResetKeyCache() {
+	keyCacheMu.Lock()
+	defer keyCacheMu.Unlock()
+	keyCache = make(map[string][]byte)
+}
 
 // SetKDFSalt updates the per-installation KDF salt used for Argon2id key derivation.
 func SetKDFSalt(salt []byte) {
@@ -39,8 +49,24 @@ func GetKDFSalt() []byte {
 }
 
 // deriveKey derives a 32-byte AES key using Argon2id and the provided salt.
+// Results are cached in-memory to prevent repeated ~75ms Argon2id CPU/RAM derivations (F07).
 func deriveKey(masterKey string, salt []byte) []byte {
-	return argon2.IDKey([]byte(masterKey), salt, 3, 64*1024, 2, 32)
+	cacheKey := string(salt) + "\x00" + masterKey
+
+	keyCacheMu.RLock()
+	cached, ok := keyCache[cacheKey]
+	keyCacheMu.RUnlock()
+	if ok {
+		return cached
+	}
+
+	derived := argon2.IDKey([]byte(masterKey), salt, 3, 64*1024, 2, 32)
+
+	keyCacheMu.Lock()
+	keyCache[cacheKey] = derived
+	keyCacheMu.Unlock()
+
+	return derived
 }
 
 // Encrypt encrypts plaintext using AES-256-GCM with a derived key from masterKey.

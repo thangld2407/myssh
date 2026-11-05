@@ -3,6 +3,7 @@ package crypto
 import (
 	"bytes"
 	"testing"
+	"time"
 )
 
 func TestEncryptDecrypt(t *testing.T) {
@@ -108,5 +109,42 @@ func TestLegacySaltMigration(t *testing.T) {
 	}
 	if !bytes.Equal(newDecrypted, newPlaintext) {
 		t.Fatalf("Decrypted mismatch: got %q, want %q", newDecrypted, newPlaintext)
+	}
+}
+
+func TestKeyCachePerformance(t *testing.T) {
+	ResetKeyCache()
+	masterKey := "benchmark-master-key-xyz"
+	salt := []byte("cache-test-salt")
+
+	// First call derives and caches
+	start := time.Now()
+	k1 := deriveKey(masterKey, salt)
+	firstDuration := time.Since(start)
+
+	// Second call hits cache
+	start = time.Now()
+	k2 := deriveKey(masterKey, salt)
+	cachedDuration := time.Since(start)
+
+	if !bytes.Equal(k1, k2) {
+		t.Fatalf("Cached key does not match first derived key")
+	}
+
+	// Cached call should be at least 100x faster than raw Argon2id
+	if cachedDuration > firstDuration/10 {
+		t.Errorf("Expected cache hit to be significantly faster: first=%v, cached=%v", firstDuration, cachedDuration)
+	}
+}
+
+func BenchmarkDeriveKeyCached(b *testing.B) {
+	masterKey := "benchmark-master-key"
+	salt := []byte("benchmark-salt-16")
+	// Warm up cache
+	_ = deriveKey(masterKey, salt)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = deriveKey(masterKey, salt)
 	}
 }
