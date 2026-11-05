@@ -64,6 +64,8 @@ func (h *TerminalHandler) Connect(c *gin.Context) {
 		return
 	}
 
+	maxRecordingBytes := int64(h.cfg.RecordingMaxSizeMB) * 1024 * 1024
+
 	sshhub.HandleTerminalSession(
 		c.Writer,
 		c.Request,
@@ -72,5 +74,7 @@ func (h *TerminalHandler) Connect(c *gin.Context) {
 		h.cfg.RecordingsDir,
 		cols,
 		rows,
+		h.cfg.RecordInputKeystrokes,
+		maxRecordingBytes,
 	)
 }

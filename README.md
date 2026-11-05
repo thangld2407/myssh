@@ -42,7 +42,7 @@
 - 🔐 **Zero-Trust Credential Vault:** Securely store passwords and SSH Private Keys (RSA, ECDSA, Ed25519) encrypted with **AES-256-GCM** using keys derived via **Argon2id**. Keys never leave your server in plaintext.
 - 🛡️ **Two-Factor Authentication (2FA / TOTP):** Native RFC 6238 TOTP verification compatible with Google Authenticator, Authy, 1Password, and Apple Passwords with 1-click QR code provisioning and brute-force protection.
 - 🔑 **Built-in Ed25519 Key Generator:** Generate military-grade SSH Ed25519 key pairs on the fly and copy public keys to your clipboard with a single click.
-- 🎥 **Session Audit & Web Player:** Automatically record session terminal I/O in the open **Asciinema v2 (`.cast`)** format with an integrated web player offering 1x, 2x, and 4x playback speeds for security auditing.
+- 🎥 **Session Audit & Web Player:** Automatically record session terminal output (with optional keystroke input capture via `RECORD_INPUT_KEYSTROKES`) in the open **Asciinema v2 (`.cast`)** format with automatic 30-day retention pruning, per-session size caps, and an integrated web player offering 1x, 2x, and 4x playback speeds for security auditing.
 - 🔀 **SSH Port Forwarding & Tunnels:** Visually configure and manage Local Port Forwarding and Dynamic SOCKS5 Proxies.
 - ⚡ **DevOps Snippet & Dynamic Command Library:** Save frequently used operations with variable placeholders (e.g. `docker logs -f --tail {{LINES}} {{CONTAINER_ID}}`) and inject them directly into running terminals.
 - 🛡️ **First-Run Setup Wizard:** Zero hardcoded default credentials! On first boot, an onboarding wizard guides you to create a strong administrator password with real-time strength evaluation and brute-force rate-limiting.
@@ -139,6 +139,9 @@ MySSH is built with a zero-trust mindset:
 | `DB_PATH` | `data/myssh.db` | Path to the SQLite database file |
 | `DATA_DIR` | `data` | Directory for application runtime storage |
 | `RECORDINGS_DIR` | `data/recordings` | Directory storing `.cast` session recordings |
+| `RECORDING_RETENTION_DAYS` | `30` | Auto-prune `.cast` session recordings older than N days |
+| `RECORDING_MAX_SIZE_MB` | `50` | Maximum file size limit in MB per terminal recording session |
+| `RECORD_INPUT_KEYSTROKES` | `false` | Enable capturing client keystroke input (`"i"` events) in recordings |
 | `MASTER_KEY` | *(Auto-generated / Set)* | 32-byte master encryption key for AES-256-GCM credential vault |
 | `JWT_SECRET` | *(Auto-generated / Set)* | Secret string used for signing authentication JWT tokens |
 | `RATE_LIMIT_ENABLED` | `true` | Enable brute-force protection rate limiter |

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,11 +20,13 @@ type AsciinemaHeader struct {
 }
 
 type SessionRecorder struct {
-	mu        sync.Mutex
-	file      *os.File
-	startTime time.Time
-	filePath  string
-	closed    bool
+	mu           sync.Mutex
+	file         *os.File
+	startTime    time.Time
+	filePath     string
+	closed       bool
+	maxBytes     int64
+	writtenBytes int64
 }
 
 func NewSessionRecorder(dir, sessionID string, width, height int, title string) (*SessionRecorder, error) {
@@ -55,20 +58,39 @@ func NewSessionRecorder(dir, sessionID string, width, height int, title string) 
 		return nil, err
 	}
 
-	if _, err := f.Write(append(headerBytes, '\n')); err != nil {
+	line := append(headerBytes, '\n')
+	n, err := f.Write(line)
+	if err != nil {
 		_ = f.Close()
 		return nil, err
 	}
 
 	return &SessionRecorder{
-		file:      f,
-		startTime: time.Now(),
-		filePath:  filePath,
+		file:         f,
+		startTime:    time.Now(),
+		filePath:     filePath,
+		writtenBytes: int64(n),
 	}, nil
+}
+
+// SetMaxBytes limits the maximum size in bytes that this recorder will write to disk.
+func (r *SessionRecorder) SetMaxBytes(maxBytes int64) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.maxBytes = maxBytes
 }
 
 // WriteOutput writes output event to asciinema stream: [time_offset, "o", data]
 func (r *SessionRecorder) WriteOutput(data []byte) error {
+	return r.writeEvent("o", data)
+}
+
+// WriteInput writes input (keystroke) event to asciinema stream: [time_offset, "i", data]
+func (r *SessionRecorder) WriteInput(data []byte) error {
+	return r.writeEvent("i", data)
+}
+
+func (r *SessionRecorder) writeEvent(eventType string, data []byte) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -76,10 +98,14 @@ func (r *SessionRecorder) WriteOutput(data []byte) error {
 		return nil
 	}
 
+	if r.maxBytes > 0 && r.writtenBytes >= r.maxBytes {
+		return nil // Capped per-session size
+	}
+
 	offset := time.Since(r.startTime).Seconds()
 	event := []interface{}{
 		offset,
-		"o",
+		eventType,
 		string(data),
 	}
 
@@ -88,7 +114,9 @@ func (r *SessionRecorder) WriteOutput(data []byte) error {
 		return err
 	}
 
-	_, err = r.file.Write(append(eventBytes, '\n'))
+	line := append(eventBytes, '\n')
+	n, err := r.file.Write(line)
+	r.writtenBytes += int64(n)
 	return err
 }
 
@@ -108,4 +136,62 @@ func (r *SessionRecorder) Close() error {
 		return r.file.Close()
 	}
 	return nil
+}
+
+// PruneRecordings deletes .cast files older than maxAgeDays from dir.
+func PruneRecordings(dir string, maxAgeDays int) (int, error) {
+	if maxAgeDays <= 0 || dir == "" {
+		return 0, nil
+	}
+
+	cutoff := time.Now().AddDate(0, 0, -maxAgeDays)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return 0, nil
+		}
+		return 0, err
+	}
+
+	deleted := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".cast") {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			path := filepath.Join(dir, entry.Name())
+			if err := os.Remove(path); err == nil {
+				deleted++
+			}
+		}
+	}
+	return deleted, nil
+}
+
+// StartRecordingReaper launches a background reaper goroutine that prunes expired recordings.
+func StartRecordingReaper(dir string, maxAgeDays int, stopCh <-chan struct{}) {
+	if maxAgeDays <= 0 || dir == "" {
+		return
+	}
+
+	// Run initial prune on boot
+	_, _ = PruneRecordings(dir, maxAgeDays)
+
+	go func() {
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				_, _ = PruneRecordings(dir, maxAgeDays)
+			}
+		}
+	}()
 }

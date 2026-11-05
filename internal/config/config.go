@@ -36,6 +36,9 @@ type Config struct {
 	MasterKey              string       `json:"-"`
 	KDFSalt                []byte       `json:"-"`
 	RecordingsDir          string       `json:"recordings_dir"`
+	RecordingRetentionDays int          `json:"recording_retention_days"`
+	RecordingMaxSizeMB     int          `json:"recording_max_size_mb"`
+	RecordInputKeystrokes  bool         `json:"record_input_keystrokes"`
 	DataDir                string       `json:"data_dir"`
 	RateLimitEnabled       bool         `json:"rate_limit_enabled"`
 	RateLimitMaxAttempts   int          `json:"rate_limit_max_attempts"`
@@ -126,6 +129,9 @@ func Load() *Config {
 	port := getEnv("PORT", "8080")
 	dbPath := getEnv("DB_PATH", "data/myssh.db")
 	recordingsDir := getEnv("RECORDINGS_DIR", "data/recordings")
+	recordingRetentionDays := getEnvInt("RECORDING_RETENTION_DAYS", 30)
+	recordingMaxSizeMB := getEnvInt("RECORDING_MAX_SIZE_MB", 50)
+	recordInputKeystrokes := getEnvBool("RECORD_INPUT_KEYSTROKES", false)
 	dataDir := getEnv("DATA_DIR", "data")
 
 	rateLimitEnabled := getEnvBool("RATE_LIMIT_ENABLED", true)
@@ -249,6 +255,9 @@ func Load() *Config {
 		MasterKey:              masterKey,
 		KDFSalt:                kdfSaltBytes,
 		RecordingsDir:          recordingsDir,
+		RecordingRetentionDays: recordingRetentionDays,
+		RecordingMaxSizeMB:     recordingMaxSizeMB,
+		RecordInputKeystrokes:  recordInputKeystrokes,
 		DataDir:                dataDir,
 		RateLimitEnabled:       rateLimitEnabled,
 		RateLimitMaxAttempts:   rateLimitMaxAttempts,

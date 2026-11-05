@@ -53,6 +53,11 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	// Start session recording retention reaper if audit enabled
+	if cfg.Features.EnableSessionAudit {
+		sshhub.StartRecordingReaper(cfg.RecordingsDir, cfg.RecordingRetentionDays, ctx.Done())
+	}
+
 	// 6. Start HTTP Server in background goroutine
 	go func() {
 		log.Printf("✨ MySSH is listening on http://localhost%s\n", addr)

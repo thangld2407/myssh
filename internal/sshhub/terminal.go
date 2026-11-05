@@ -36,6 +36,8 @@ func HandleTerminalSession(
 	sessionRecord *db.Session,
 	recordingsDir string,
 	initialCols, initialRows int,
+	recordInput bool,
+	maxRecordingBytes int64,
 ) {
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -121,6 +123,9 @@ func HandleTerminalSession(
 	// 4. Start session recorder
 	recorder, err := NewSessionRecorder(recordingsDir, sessionRecord.ID, initialCols, initialRows, sessionRecord.HostName)
 	if err == nil {
+		if maxRecordingBytes > 0 {
+			recorder.SetMaxBytes(maxRecordingBytes)
+		}
 		sessionRecord.RecordingPath = recorder.FilePath()
 		defer recorder.Close()
 	}
@@ -217,6 +222,11 @@ func HandleTerminalSession(
 			// Forward stdin keystrokes
 			if _, err := stdinPipe.Write(data); err != nil {
 				return
+			}
+
+			// Record keystrokes if configured
+			if recorder != nil && recordInput {
+				_ = recorder.WriteInput(data)
 			}
 		}
 	}()
