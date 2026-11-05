@@ -131,6 +131,21 @@ MySSH is built with a zero-trust mindset:
 
 ---
 
+## 🏛️ Architecture & Deployment Model (Single-Instance Design)
+
+> [!IMPORTANT]
+> **Single-Instance Deployment Constraint**: MySSH is purposefully engineered as an ultra-lightweight, self-hosted, single-binary gateway and access bastion.
+
+To deliver microsecond-latency terminal bridging, connection multiplexing, and defense-in-depth rate limiting without external dependencies (such as Redis or message queues), active operational state is maintained in-memory within the running instance:
+* **Interactive Terminal Bridges & WebSocket Streams**: Open PTY streams and WebSocket sessions are bound directly to the hosting process.
+* **Connection Pools & SFTP Clients**: `sshhub.GlobalPool` caches active SSH/SFTP client connections with automated idle reaping.
+* **Tunnels & Port Forwarding**: Active background SSH tunnels (`sshhub.Hub`) and Kubernetes port-forward streams (`k8shub.GlobalPFManager`) run inside managed goroutines.
+* **Ephemeral Rate Limiting & Auth Tickets**: Brute-force lockout counters and one-time short-lived WebSocket tickets operate with in-process synchronized caches.
+
+**Scaling Recommendation**: Deploy MySSH as a single container or single systemd daemon (`replicas: 1`). Running multiple active replicas behind a stateless round-robin load balancer is unsupported. For resilient operations, deploy as an auto-restarting single replica attached to a persistent volume for `data/` and automated database backups.
+
+---
+
 ## ⚙️ Configuration (.env)
 
 | Variable | Default | Description |
