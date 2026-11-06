@@ -81,7 +81,7 @@ func checkRateLimit(cfg *config.Config, key string) error {
 
 	if attempt.count >= maxAttempts {
 		remaining := window - time.Since(attempt.lastTried)
-		return fmt.Errorf("Too many failed login attempts. Please wait %d seconds before trying again", int(remaining.Seconds()))
+		return fmt.Errorf("too many failed login attempts. Please wait %d seconds before trying again", int(remaining.Seconds()))
 	}
 	return nil
 }

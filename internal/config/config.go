@@ -294,9 +294,9 @@ func Load() *Config {
 		var b strings.Builder
 		b.WriteString("# MySSH auto-generated secrets. DO NOT LOSE THIS FILE!\n")
 		b.WriteString("# Losing MASTER_KEY or KDF_SALT will prevent decrypting stored vault credentials.\n")
-		b.WriteString(fmt.Sprintf("JWT_SECRET=%s\n", persistedSecrets["JWT_SECRET"]))
-		b.WriteString(fmt.Sprintf("MASTER_KEY=%s\n", persistedSecrets["MASTER_KEY"]))
-		b.WriteString(fmt.Sprintf("KDF_SALT=%s\n", persistedSecrets["KDF_SALT"]))
+		fmt.Fprintf(&b, "JWT_SECRET=%s\n", persistedSecrets["JWT_SECRET"])
+		fmt.Fprintf(&b, "MASTER_KEY=%s\n", persistedSecrets["MASTER_KEY"])
+		fmt.Fprintf(&b, "KDF_SALT=%s\n", persistedSecrets["KDF_SALT"])
 
 		if err := os.WriteFile(secretsPath, []byte(b.String()), 0600); err != nil {
 			log.Fatalf("[Config] CRITICAL: Failed to persist generated secrets to %s: %v. Please ensure data directory is writable or supply keys via environment variables.", secretsPath, err)

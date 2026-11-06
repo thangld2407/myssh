@@ -483,7 +483,7 @@ func (h *K8sHandler) GetPodLogs(c *gin.Context) {
 
 	err = k8shub.StreamPodLogs(c.Request.Context(), cs, opts, c.Writer)
 	if err != nil && err != context.Canceled {
-		_, _ = c.Writer.Write([]byte(fmt.Sprintf("\n[Error streaming logs: %v]\n", err)))
+		_, _ = fmt.Fprintf(c.Writer, "\n[Error streaming logs: %v]\n", err)
 	}
 }
 
