@@ -89,8 +89,21 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
 
     term.open(el);
     try {
+      // Patch _store on term._core for @xterm/addon-webgl compatibility with @xterm/xterm 5.5.0
+      const core = (term as any)._core;
+      if (core && !core._store) {
+        core._store = {
+          get _isDisposed() {
+            return Boolean(core._isDisposed);
+          },
+        };
+      }
       const webglAddon = new WebglAddon();
-      webglAddon.onContextLoss(() => webglAddon.dispose());
+      webglAddon.onContextLoss(() => {
+        try {
+          webglAddon.dispose();
+        } catch {}
+      });
       term.loadAddon(webglAddon);
     } catch {}
     setTimeout(() => {
@@ -176,9 +189,21 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
       window.removeEventListener('resize', handleResize);
       Object.values(instances.current).forEach((inst) => {
         try {
-          inst.ws.close();
-          inst.term.dispose();
+          inst.ws?.close();
         } catch {}
+        try {
+          const core = (inst.term as any)?._core;
+          if (core && !core._store) {
+            core._store = {
+              get _isDisposed() {
+                return Boolean(core._isDisposed);
+              },
+            };
+          }
+          inst.term?.dispose();
+        } catch (err) {
+          console.warn('MultiExec terminal disposal handled safely:', err);
+        }
       });
       instances.current = {};
     };

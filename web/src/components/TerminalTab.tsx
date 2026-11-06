@@ -45,7 +45,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
   const [sessionSeconds, setSessionSeconds] = useState<number>(0);
   const [showSplitSftp, setShowSplitSftp] = useState<boolean>(false);
   const [showSnippetModal, setShowSnippetModal] = useState<boolean>(false);
-  const [showMetrics, setShowMetrics] = useState<boolean>(true);
+  const [showMetrics, setShowMetrics] = useState<boolean>(false);
   const [showSearch, setShowSearch] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [caseSensitive, setCaseSensitive] = useState<boolean>(false);
@@ -78,15 +78,37 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
-  const connectWebSocket = async () => {
-    if (!terminalRef.current) return;
-
+  const disposeTerminal = () => {
     if (wsInstance.current) {
-      wsInstance.current.close();
+      try {
+        wsInstance.current.close();
+      } catch {}
+      wsInstance.current = null;
     }
     if (xtermInstance.current) {
-      xtermInstance.current.dispose();
+      try {
+        const core = (xtermInstance.current as any)._core;
+        if (core && !core._store) {
+          core._store = {
+            get _isDisposed() {
+              return Boolean(core._isDisposed);
+            },
+          };
+        }
+        xtermInstance.current.dispose();
+      } catch (err) {
+        console.warn('Terminal disposal handled safely:', err);
+      }
+      xtermInstance.current = null;
     }
+    searchAddonInstance.current = null;
+    fitAddonInstance.current = null;
+  };
+
+  const connectWebSocket = async (checkCanceled: () => boolean = () => false) => {
+    if (!terminalRef.current || checkCanceled()) return;
+
+    disposeTerminal();
 
     setStatus('connecting');
     setSessionSeconds(0);
@@ -94,8 +116,10 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     let authParam = '';
     try {
       const ticketRes = await api.getWsTicket();
+      if (checkCanceled()) return;
       authParam = `ticket=${encodeURIComponent(ticketRes.ticket)}`;
     } catch {
+      if (checkCanceled()) return;
       const token = getAuthToken();
       if (token) {
         authParam = `token=${encodeURIComponent(token)}`;
@@ -104,6 +128,8 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
         return;
       }
     }
+
+    if (checkCanceled() || !terminalRef.current) return;
 
     const term = new Terminal({
       theme: {
@@ -149,9 +175,20 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
 
     // Hardware-accelerated GPU rendering via WebGL with fallback to DOM renderer
     try {
+      // Patch _store on term._core for @xterm/addon-webgl compatibility with @xterm/xterm 5.5.0
+      const core = (term as any)._core;
+      if (core && !core._store) {
+        core._store = {
+          get _isDisposed() {
+            return Boolean(core._isDisposed);
+          },
+        };
+      }
       const webglAddon = new WebglAddon();
       webglAddon.onContextLoss(() => {
-        webglAddon.dispose();
+        try {
+          webglAddon.dispose();
+        } catch {}
       });
       term.loadAddon(webglAddon);
     } catch {
@@ -260,7 +297,8 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
   };
 
   useEffect(() => {
-    connectWebSocket();
+    let isCanceled = false;
+    connectWebSocket(() => isCanceled);
 
     const handleWindowResize = () => {
       if (fitAddonInstance.current && xtermInstance.current) {
@@ -297,16 +335,12 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     }
 
     return () => {
+      isCanceled = true;
       window.removeEventListener('resize', handleWindowResize);
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
-      if (wsInstance.current) {
-        wsInstance.current.close();
-      }
-      if (xtermInstance.current) {
-        xtermInstance.current.dispose();
-      }
+      disposeTerminal();
     };
   }, [host.id]);
 
@@ -448,7 +482,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
 
           {status === 'disconnected' && (
             <button
-              onClick={connectWebSocket}
+              onClick={() => connectWebSocket()}
               className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-sans font-semibold transition shadow-xs"
               title="Kết nối lại"
             >
@@ -525,7 +559,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
       {/* Zero-Agent Live Server Metrics Overlay */}
       <ServerMetricsOverlay
         hostId={host.id}
-        isVisible={showMetrics}
+        isVisible={showMetrics && status === 'connected'}
         onToggleVisible={() => {
           setShowMetrics(!showMetrics);
           setTimeout(() => fitAddonInstance.current?.fit(), 60);

@@ -107,8 +107,21 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
     term.open(terminalRef.current);
 
     try {
+      // Patch _store on term._core for @xterm/addon-webgl compatibility with @xterm/xterm 5.5.0
+      const core = (term as any)._core;
+      if (core && !core._store) {
+        core._store = {
+          get _isDisposed() {
+            return Boolean(core._isDisposed);
+          },
+        };
+      }
       const webglAddon = new WebglAddon();
-      webglAddon.onContextLoss(() => webglAddon.dispose());
+      webglAddon.onContextLoss(() => {
+        try {
+          webglAddon.dispose();
+        } catch {}
+      });
       term.loadAddon(webglAddon);
     } catch {}
 
@@ -193,10 +206,26 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
 
     return () => {
       if (wsInstance.current) {
-        wsInstance.current.close();
+        try {
+          wsInstance.current.close();
+        } catch {}
+        wsInstance.current = null;
       }
       if (xtermInstance.current) {
-        xtermInstance.current.dispose();
+        try {
+          const core = (xtermInstance.current as any)._core;
+          if (core && !core._store) {
+            core._store = {
+              get _isDisposed() {
+                return Boolean(core._isDisposed);
+              },
+            };
+          }
+          xtermInstance.current.dispose();
+        } catch (err) {
+          console.warn('K8s terminal disposal handled safely:', err);
+        }
+        xtermInstance.current = null;
       }
     };
   }, [isOpen, selectedContainer, shellCmd]);

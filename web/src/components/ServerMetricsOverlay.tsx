@@ -34,21 +34,31 @@ export const ServerMetricsOverlay: React.FC<ServerMetricsOverlayProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<number>(10); // 0 = paused, 5s, 10s
+  const [consecutiveErrors, setConsecutiveErrors] = useState<number>(0);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const timerRef = useRef<any>(null);
 
   const fetchMetrics = async (isManual = false) => {
     if (loading && !isManual) return;
+    if (!isManual && consecutiveErrors >= 2) return; // Stop background polling on unreachable host
+
     setLoading(true);
-    setError(null);
     try {
       const data = await api.getHostMetrics(hostId);
       setMetrics(data);
+      setError(null);
+      setConsecutiveErrors(0);
     } catch (err: any) {
       setError(err.message || t('metrics.error'));
+      setConsecutiveErrors((prev) => prev + 1);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleManualRefresh = () => {
+    setConsecutiveErrors(0);
+    fetchMetrics(true);
   };
 
   useEffect(() => {
@@ -248,7 +258,7 @@ export const ServerMetricsOverlay: React.FC<ServerMetricsOverlayProps> = ({
 
           {/* Manual Refresh Button */}
           <button
-            onClick={() => fetchMetrics(true)}
+            onClick={handleManualRefresh}
             disabled={loading}
             className="w-7 h-7 flex items-center justify-center rounded-md bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition active:scale-95 disabled:opacity-50"
             title={t('metrics.refresh')}
