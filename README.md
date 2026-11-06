@@ -158,6 +158,7 @@ To deliver microsecond-latency terminal bridging, connection multiplexing, and d
 | `RECORDING_MAX_SIZE_MB` | `50` | Maximum file size limit in MB per terminal recording session |
 | `RECORD_INPUT_KEYSTROKES` | `false` | Enable capturing client keystroke input (`"i"` events) in recordings |
 | `MAX_UPLOAD_SIZE_MB` | `100` | Maximum file upload size limit in MB for SFTP transfers |
+| `SESSION_IDLE_TIMEOUT_MINUTES` | `30` | Auto-terminate inactive terminal sessions after N minutes (0 to disable) |
 | `MASTER_KEY` | *(Auto-generated / Set)* | 32-byte master encryption key for AES-256-GCM credential vault |
 | `JWT_SECRET` | *(Auto-generated / Set)* | Secret string used for signing authentication JWT tokens |
 | `RATE_LIMIT_ENABLED` | `true` | Enable brute-force protection rate limiter |
