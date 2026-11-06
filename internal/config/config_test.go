@@ -26,6 +26,9 @@ func TestConfigDefaults(t *testing.T) {
 	if cfg.RateLimitMaxAttempts != 5 {
 		t.Errorf("Expected RateLimitMaxAttempts to be 5, got %d", cfg.RateLimitMaxAttempts)
 	}
+	if cfg.SessionIdleTimeoutMinutes != 30 {
+		t.Errorf("Expected default SessionIdleTimeoutMinutes to be 30, got %d", cfg.SessionIdleTimeoutMinutes)
+	}
 
 	// Verify .secrets was created in the temp directory
 	secretsPath := filepath.Join(tmpDir, ".secrets")

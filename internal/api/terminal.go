@@ -66,6 +66,11 @@ func (h *TerminalHandler) Connect(c *gin.Context) {
 
 	maxRecordingBytes := int64(h.cfg.RecordingMaxSizeMB) * 1024 * 1024
 
+	idleTimeoutMinutes := 30
+	if h.cfg != nil && h.cfg.SessionIdleTimeoutMinutes > 0 {
+		idleTimeoutMinutes = h.cfg.SessionIdleTimeoutMinutes
+	}
+
 	sshhub.HandleTerminalSession(
 		c.Writer,
 		c.Request,
@@ -77,5 +82,6 @@ func (h *TerminalHandler) Connect(c *gin.Context) {
 		h.cfg.RecordInputKeystrokes,
 		maxRecordingBytes,
 		h.cfg.AllowedOrigins,
+		idleTimeoutMinutes,
 	)
 }

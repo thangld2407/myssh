@@ -64,6 +64,7 @@ func HandleTerminalSession(
 	recordInput bool,
 	maxRecordingBytes int64,
 	allowedOrigins []string,
+	idleTimeoutMinutes int,
 ) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(req *http.Request) bool {
@@ -79,6 +80,17 @@ func HandleTerminalSession(
 		return
 	}
 	defer ws.Close()
+
+	const (
+		pongWait   = 60 * time.Second
+		pingPeriod = 30 * time.Second
+	)
+
+	_ = ws.SetReadDeadline(time.Now().Add(pongWait))
+	ws.SetPongHandler(func(string) error {
+		_ = ws.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
 
 	if initialCols <= 0 {
 		initialCols = 120
@@ -178,11 +190,18 @@ func HandleTerminalSession(
 	db.DB.Save(sessionRecord)
 
 	var (
-		wg        sync.WaitGroup
-		closeOnce sync.Once
-		byteCount int64
-		wsMu      sync.Mutex
+		wg           sync.WaitGroup
+		closeOnce    sync.Once
+		byteCount    int64
+		wsMu         sync.Mutex
+		doneChan     = make(chan struct{})
+		lastActivity int64
 	)
+	atomic.StoreInt64(&lastActivity, time.Now().Unix())
+
+	updateActivity := func() {
+		atomic.StoreInt64(&lastActivity, time.Now().Unix())
+	}
 
 	safeWriteWS := func(messageType int, data []byte) error {
 		wsMu.Lock()
@@ -192,9 +211,51 @@ func HandleTerminalSession(
 
 	closeAll := func() {
 		closeOnce.Do(func() {
+			close(doneChan)
 			_ = session.Close()
 			_ = ws.Close()
 		})
+	}
+
+	// Keepalive: periodic ping to detect dead TCP connections
+	go func() {
+		pingTicker := time.NewTicker(pingPeriod)
+		defer pingTicker.Stop()
+		for {
+			select {
+			case <-pingTicker.C:
+				if err := safeWriteWS(websocket.PingMessage, nil); err != nil {
+					closeAll()
+					return
+				}
+			case <-doneChan:
+				return
+			}
+		}
+	}()
+
+	// Idle timeout reaper: terminates inactive sessions after N minutes
+	if idleTimeoutMinutes > 0 {
+		idleTimeout := time.Duration(idleTimeoutMinutes) * time.Minute
+		go func() {
+			idleTicker := time.NewTicker(30 * time.Second)
+			defer idleTicker.Stop()
+			for {
+				select {
+				case <-idleTicker.C:
+					last := atomic.LoadInt64(&lastActivity)
+					if time.Since(time.Unix(last, 0)) >= idleTimeout {
+						log.Printf("[Terminal] Session %s closed due to %d minutes of inactivity\n", sessionRecord.ID, idleTimeoutMinutes)
+						_ = safeWriteWS(websocket.TextMessage, []byte("\r\n\x1b[33m[MySSH] Session terminated due to inactivity (idle timeout).\x1b[0m\r\n"))
+						time.Sleep(100 * time.Millisecond)
+						closeAll()
+						return
+					}
+				case <-doneChan:
+					return
+				}
+			}
+		}()
 	}
 
 	// Stream stdout & stderr to WebSocket and Recorder
@@ -206,6 +267,7 @@ func HandleTerminalSession(
 			if n > 0 {
 				chunk := buf[:n]
 				atomic.AddInt64(&byteCount, int64(n))
+				updateActivity()
 
 				// Write to WebSocket
 				if err := safeWriteWS(websocket.BinaryMessage, chunk); err != nil {
@@ -241,6 +303,9 @@ func HandleTerminalSession(
 			if err != nil {
 				return
 			}
+
+			_ = ws.SetReadDeadline(time.Now().Add(pongWait))
+			updateActivity()
 
 			if msgType == websocket.TextMessage {
 				// Check if it's a resize control message

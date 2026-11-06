@@ -39,8 +39,9 @@ type Config struct {
 	RecordingRetentionDays int          `json:"recording_retention_days"`
 	RecordingMaxSizeMB     int          `json:"recording_max_size_mb"`
 	RecordInputKeystrokes  bool         `json:"record_input_keystrokes"`
-	MaxUploadSizeMB        int          `json:"max_upload_size_mb"`
-	DataDir                string       `json:"data_dir"`
+	MaxUploadSizeMB           int          `json:"max_upload_size_mb"`
+	SessionIdleTimeoutMinutes int          `json:"session_idle_timeout_minutes"`
+	DataDir                   string       `json:"data_dir"`
 	RateLimitEnabled       bool         `json:"rate_limit_enabled"`
 	RateLimitMaxAttempts   int          `json:"rate_limit_max_attempts"`
 	RateLimitWindowMinutes int          `json:"rate_limit_window_minutes"`
@@ -135,6 +136,7 @@ func Load() *Config {
 	recordingMaxSizeMB := getEnvInt("RECORDING_MAX_SIZE_MB", 50)
 	recordInputKeystrokes := getEnvBool("RECORD_INPUT_KEYSTROKES", false)
 	maxUploadSizeMB := getEnvInt("MAX_UPLOAD_SIZE_MB", 100)
+	sessionIdleTimeoutMinutes := getEnvInt("SESSION_IDLE_TIMEOUT_MINUTES", 30)
 	dataDir := getEnv("DATA_DIR", "data")
 
 	rateLimitEnabled := getEnvBool("RATE_LIMIT_ENABLED", true)
@@ -272,8 +274,9 @@ func Load() *Config {
 		RecordingRetentionDays: recordingRetentionDays,
 		RecordingMaxSizeMB:     recordingMaxSizeMB,
 		RecordInputKeystrokes:  recordInputKeystrokes,
-		MaxUploadSizeMB:        maxUploadSizeMB,
-		DataDir:                dataDir,
+		MaxUploadSizeMB:           maxUploadSizeMB,
+		SessionIdleTimeoutMinutes: sessionIdleTimeoutMinutes,
+		DataDir:                   dataDir,
 		RateLimitEnabled:       rateLimitEnabled,
 		RateLimitMaxAttempts:   rateLimitMaxAttempts,
 		RateLimitWindowMinutes: rateLimitWindowMinutes,
