@@ -98,17 +98,56 @@ export const App: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  // Global Keyboard listener for ⌘K and Ctrl+K
+  // Global Keyboard listener for ⌘K, Cmd+1..9, Cmd+W, Cmd+T
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // ⌘K / Ctrl+K: Command Palette
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setShowCommandPalette((prev) => !prev);
+        return;
+      }
+
+      // ⌘T / Alt+T: Open Add Host Modal
+      if ((e.metaKey || e.altKey) && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        setHostToEdit(null);
+        setShowHostModal(true);
+        return;
+      }
+
+      // ⌘W / Alt+W: Close current tab if in terminal or multi-exec
+      if ((e.metaKey || e.altKey) && e.key.toLowerCase() === 'w') {
+        if (activeTabId !== 'dashboard') {
+          e.preventDefault();
+          if (activeTabId === 'multi-exec') {
+            setMultiExecHosts(null);
+            setActiveTabId('dashboard');
+          } else {
+            handleCloseTerminal(activeTabId);
+          }
+          return;
+        }
+      }
+
+      // ⌘1..9 / Alt+1..9 / Ctrl+1..9: Switch tab by index
+      if ((e.metaKey || e.altKey || e.ctrlKey) && /^[1-9]$/.test(e.key)) {
+        const index = parseInt(e.key, 10);
+        const allTabs: string[] = ['dashboard'];
+        if (features.enable_multi_exec && multiExecHosts) {
+          allTabs.push('multi-exec');
+        }
+        terminalTabs.forEach((t) => allTabs.push(t.id));
+
+        if (index <= allTabs.length) {
+          e.preventDefault();
+          setActiveTabId(allTabs[index - 1]);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [activeTabId, terminalTabs, multiExecHosts, features]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
