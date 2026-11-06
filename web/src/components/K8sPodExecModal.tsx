@@ -52,13 +52,18 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
 
     setStatus('connecting');
 
-    let ticket = '';
+    let authParam = '';
     try {
       const ticketRes = await api.getWsTicket();
-      ticket = ticketRes.ticket;
+      authParam = `ticket=${encodeURIComponent(ticketRes.ticket)}`;
     } catch {
-      setStatus('disconnected');
-      return;
+      const token = getAuthToken();
+      if (token) {
+        authParam = `token=${encodeURIComponent(token)}`;
+      } else {
+        setStatus('disconnected');
+        return;
+      }
     }
 
     const term = new Terminal({
@@ -122,7 +127,7 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
       pod.name
     )}/exec?namespace=${encodeURIComponent(pod.namespace)}&container=${encodeURIComponent(
       selectedContainer
-    )}&command=${encodeURIComponent(shellCmd)}&ticket=${encodeURIComponent(ticket)}`;
+    )}&command=${encodeURIComponent(shellCmd)}&${authParam}`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';

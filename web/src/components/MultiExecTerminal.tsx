@@ -48,13 +48,18 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
 
     setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'connecting' }));
 
-    let ticket = '';
+    let authParam = '';
     try {
       const ticketRes = await api.getWsTicket();
-      ticket = ticketRes.ticket;
+      authParam = `ticket=${encodeURIComponent(ticketRes.ticket)}`;
     } catch {
-      setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'disconnected' }));
-      return;
+      const token = getAuthToken();
+      if (token) {
+        authParam = `token=${encodeURIComponent(token)}`;
+      } else {
+        setTerminalsStatus((prev) => ({ ...prev, [host.id]: 'disconnected' }));
+        return;
+      }
     }
 
     const term = new Terminal({
@@ -96,7 +101,7 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     }, 60);
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?ticket=${ticket}`;
+    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?${authParam}`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';

@@ -91,13 +91,18 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     setStatus('connecting');
     setSessionSeconds(0);
 
-    let ticket = '';
+    let authParam = '';
     try {
       const ticketRes = await api.getWsTicket();
-      ticket = ticketRes.ticket;
-    } catch (err) {
-      setStatus('disconnected');
-      return;
+      authParam = `ticket=${encodeURIComponent(ticketRes.ticket)}`;
+    } catch {
+      const token = getAuthToken();
+      if (token) {
+        authParam = `token=${encodeURIComponent(token)}`;
+      } else {
+        setStatus('disconnected');
+        return;
+      }
     }
 
     const term = new Terminal({
@@ -194,7 +199,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     const rows = term.rows || 36;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?ticket=${ticket}&cols=${cols}&rows=${rows}`;
+    const wsUrl = `${protocol}//${window.location.host}/api/ws/terminal/${host.id}?${authParam}&cols=${cols}&rows=${rows}`;
 
     const ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';
