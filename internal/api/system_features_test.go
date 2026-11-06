@@ -46,3 +46,31 @@ func TestSystemFeatures_DoesNotExposeRateLimit(t *testing.T) {
 		t.Errorf("Security finding F21: 'rate_limit' configuration must not be exposed in public /api/system/features")
 	}
 }
+
+func TestHealthzAndReadyz(t *testing.T) {
+	setupTestDB(t)
+	cfg := &config.Config{}
+	r := SetupRouter(cfg)
+
+	// 1. Test /healthz
+	req, _ := http.NewRequest("GET", "/healthz", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected 200 for /healthz, got %d", w.Code)
+	}
+
+	// 2. Test /readyz
+	req, _ = http.NewRequest("GET", "/readyz", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected 200 for /readyz, got %d", w.Code)
+	}
+	var readyResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &readyResp)
+	if readyResp["status"] != "ready" {
+		t.Errorf("Expected ready status, got %v", readyResp["status"])
+	}
+}
+

@@ -11,6 +11,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/myssh/myssh/internal/config"
+	"github.com/myssh/myssh/internal/db"
 	"github.com/myssh/myssh/internal/middleware"
 	"github.com/myssh/myssh/web"
 )
@@ -89,9 +90,43 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 	k8sHandler := NewK8sHandler(cfg)
 	auditHandler := NewAuditHandler(cfg)
 
+	// Observability health & readiness probes
+	healthzHandler := func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"version": "1.3.0",
+		})
+	}
+	readyzHandler := func(c *gin.Context) {
+		if db.DB == nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status": "error",
+				"error":  "database not initialized",
+			})
+			return
+		}
+		sqlDB, err := db.DB.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{
+				"status": "error",
+				"error":  "database ping failed",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"status":   "ready",
+			"database": "connected",
+		})
+	}
+
+	r.GET("/healthz", healthzHandler)
+	r.GET("/readyz", readyzHandler)
+
 	// Public System & Auth routes
 	api := r.Group("/api")
 	{
+		api.GET("/healthz", healthzHandler)
+		api.GET("/readyz", readyzHandler)
 		api.GET("/system/features", func(c *gin.Context) {
 			c.JSON(200, gin.H{
 				"version":  "1.1.0",
