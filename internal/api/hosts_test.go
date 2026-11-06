@@ -165,3 +165,110 @@ Host dev-api
 		t.Errorf("Expected 200 OK on delete host, got %d", w.Code)
 	}
 }
+
+func TestHostImport_Deduplication(t *testing.T) {
+	setupTestDB(t)
+	db.DB.Exec("DELETE FROM hosts")
+
+	cfg := &config.Config{
+		MasterKey: "test-master-key-32-bytes-long!!",
+	}
+	handler := NewHostHandler(cfg)
+
+	r := gin.New()
+	r.POST("/api/hosts/import", handler.ImportSSHConfig)
+
+	sshConfig := `
+Host db-primary
+    HostName db.example.com
+    User postgres
+    Port 5432
+`
+
+	// 1. First import: creates 1 new host
+	req1 := ImportSSHConfigRequest{
+		Content:           sshConfig,
+		DuplicateStrategy: "skip",
+	}
+	body1, _ := json.Marshal(req1)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/hosts/import", bytes.NewBuffer(body1))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Expected 201 Created on first import, got %d: %s", w.Code, w.Body.String())
+	}
+	var res1 map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &res1)
+	if res1["created"] != float64(1) {
+		t.Errorf("Expected 1 created host, got %v", res1["created"])
+	}
+
+	// 2. Second import with strategy "skip" -> skips existing host, total hosts in DB stays 1
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/hosts/import", bytes.NewBuffer(body1))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Expected 201 Created on second import, got %d", w.Code)
+	}
+	var res2 map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &res2)
+	if res2["skipped"] != float64(1) {
+		t.Errorf("Expected 1 skipped host, got %v", res2["skipped"])
+	}
+
+	var count int64
+	db.DB.Model(&db.Host{}).Where("name = ?", "db-primary").Count(&count)
+	if count != 1 {
+		t.Errorf("Expected exactly 1 host in DB after skip strategy, got %d", count)
+	}
+
+	// 3. Third import with strategy "update" and modified username -> updates existing host
+	updatedConfig := `
+Host db-primary
+    HostName db.example.com
+    User postgres-admin
+    Port 5432
+`
+	reqUpdate := ImportSSHConfigRequest{
+		Content:           updatedConfig,
+		DuplicateStrategy: "update",
+	}
+	bodyUpdate, _ := json.Marshal(reqUpdate)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/hosts/import", bytes.NewBuffer(bodyUpdate))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	var res3 map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &res3)
+	if res3["updated"] != float64(1) {
+		t.Errorf("Expected 1 updated host, got %v", res3["updated"])
+	}
+
+	var updatedHost db.Host
+	db.DB.First(&updatedHost, "name = ?", "db-primary")
+	if updatedHost.Username != "postgres-admin" {
+		t.Errorf("Expected updated username postgres-admin, got %s", updatedHost.Username)
+	}
+
+	// 4. Dry run with existing host should report existing_count = 1
+	reqDry := ImportSSHConfigRequest{
+		Content: updatedConfig,
+		DryRun:  true,
+	}
+	bodyDry, _ := json.Marshal(reqDry)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/hosts/import", bytes.NewBuffer(bodyDry))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	var resDry map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resDry)
+	if resDry["existing_count"] != float64(1) {
+		t.Errorf("Expected dry run existing_count 1, got %v", resDry["existing_count"])
+	}
+}

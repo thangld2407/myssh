@@ -20,6 +20,9 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successCount, setSuccessCount] = useState<number | null>(null);
+  const [duplicateStrategy, setDuplicateStrategy] = useState<'skip' | 'update' | 'create'>('skip');
+  const [newCount, setNewCount] = useState<number>(0);
+  const [existingCount, setExistingCount] = useState<number>(0);
 
   useEffect(() => {
     api.getCredentials().then((creds) => {
@@ -56,6 +59,8 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
         dry_run: true,
       });
       setParsedPreview(res.hosts || []);
+      setNewCount(res.new_count || 0);
+      setExistingCount(res.existing_count || 0);
       if (!res.hosts || res.hosts.length === 0) {
         setError('Không tìm thấy định nghĩa Host hợp lệ nào trong nội dung SSH config.');
       }
@@ -88,6 +93,7 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
         content: configContent,
         default_credential_id: credentialId,
         folder: folder.trim() || 'Imported',
+        duplicate_strategy: duplicateStrategy,
         dry_run: false,
       });
 
@@ -147,7 +153,7 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
               </p>
 
               {/* Upload and Inputs Bar */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                     Gắn vào Môi trường / Nhóm
@@ -176,6 +182,21 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
                         {c.name} ({c.type === 'private_key' ? 'SSH Key' : 'Password'})
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    Xử lý trùng lặp (Dedupe)
+                  </label>
+                  <select
+                    value={duplicateStrategy}
+                    onChange={(e) => setDuplicateStrategy(e.target.value as any)}
+                    className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition"
+                  >
+                    <option value="skip">Bỏ qua máy chủ đã có</option>
+                    <option value="update">Cập nhật thông tin máy chủ đã có</option>
+                    <option value="create">Tạo bản sao mới</option>
                   </select>
                 </div>
               </div>
@@ -217,7 +238,7 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
                 <div className="space-y-2 animate-in fade-in">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-slate-700">
-                      Xem trước máy chủ phát hiện ({parsedPreview.length}):
+                      Xem trước máy chủ phát hiện ({parsedPreview.length} máy chủ: {newCount} mới, {existingCount} đã có):
                     </span>
                     <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-mono text-xs font-semibold">
                       Sẵn sàng nhập
@@ -233,6 +254,7 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
                           <th className="py-2 px-3.5">Port</th>
                           <th className="py-2 px-3.5">User</th>
                           <th className="py-2 px-3.5">ProxyJump</th>
+                          <th className="py-2 px-3.5">Trạng thái</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 font-mono text-xs">
@@ -243,6 +265,17 @@ export const ImportSshConfigModal: React.FC<ImportSshConfigModalProps> = ({
                             <td className="py-2 px-3.5 text-slate-500">{h.port}</td>
                             <td className="py-2 px-3.5 text-slate-600">{h.username}</td>
                             <td className="py-2 px-3.5 text-slate-400">{h.proxy_jump || '-'}</td>
+                            <td className="py-2 px-3.5 font-sans">
+                              {h.status === 'existing' ? (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  Đã tồn tại
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  Mới
+                                </span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

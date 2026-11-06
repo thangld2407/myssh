@@ -179,9 +179,19 @@ export const api = {
     content: string;
     default_credential_id?: string;
     folder?: string;
+    duplicate_strategy?: 'skip' | 'update' | 'create';
     dry_run?: boolean;
   }) =>
-    request<{ count: number; hosts: any[]; message?: string }>('/hosts/import', {
+    request<{
+      count: number;
+      created?: number;
+      updated?: number;
+      skipped?: number;
+      new_count?: number;
+      existing_count?: number;
+      hosts: any[];
+      message?: string;
+    }>('/hosts/import', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

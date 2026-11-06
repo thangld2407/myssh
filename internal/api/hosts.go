@@ -252,6 +252,7 @@ type ImportSSHConfigRequest struct {
 	Content             string `json:"content" binding:"required"`
 	DefaultCredentialID string `json:"default_credential_id"`
 	Folder              string `json:"folder"`
+	DuplicateStrategy   string `json:"duplicate_strategy"` // "skip", "update", "create" (default: "skip")
 	DryRun              bool   `json:"dry_run"`
 }
 
@@ -269,9 +270,32 @@ func (h *HostHandler) ImportSSHConfig(c *gin.Context) {
 	}
 
 	if req.DryRun {
+		var previewHosts []gin.H
+		newCount := 0
+		existingCount := 0
+		for _, p := range parsed {
+			var existing db.Host
+			status := "new"
+			if err := db.DB.Where("name = ? OR (hostname = ? AND port = ?)", p.Name, p.Hostname, p.Port).First(&existing).Error; err == nil {
+				status = "existing"
+				existingCount++
+			} else {
+				newCount++
+			}
+			previewHosts = append(previewHosts, gin.H{
+				"name":       p.Name,
+				"hostname":   p.Hostname,
+				"port":       p.Port,
+				"username":   p.Username,
+				"proxy_jump": p.ProxyJump,
+				"status":     status,
+			})
+		}
 		c.JSON(http.StatusOK, gin.H{
-			"count": len(parsed),
-			"hosts": parsed,
+			"count":          len(parsed),
+			"hosts":          previewHosts,
+			"new_count":      newCount,
+			"existing_count": existingCount,
 		})
 		return
 	}
@@ -290,10 +314,43 @@ func (h *HostHandler) ImportSSHConfig(c *gin.Context) {
 		}
 	}
 
+	strategy := strings.ToLower(strings.TrimSpace(req.DuplicateStrategy))
+	if strategy == "" {
+		strategy = "skip"
+	}
+
 	createdCount := 0
-	var createdHosts []db.Host
+	updatedCount := 0
+	skippedCount := 0
+	var importedHosts []db.Host
 
 	for _, p := range parsed {
+		var existing db.Host
+		exists := db.DB.Where("name = ? OR (hostname = ? AND port = ?)", p.Name, p.Hostname, p.Port).First(&existing).Error == nil
+
+		if exists {
+			switch strategy {
+			case "skip":
+				skippedCount++
+				continue
+			case "update":
+				existing.Hostname = p.Hostname
+				existing.Port = p.Port
+				existing.Username = p.Username
+				if credID != "" {
+					existing.CredentialID = credID
+				}
+				existing.UpdatedAt = time.Now()
+				if err := db.DB.Save(&existing).Error; err == nil {
+					updatedCount++
+					importedHosts = append(importedHosts, existing)
+				}
+				continue
+			case "create":
+				// Proceed to create as new
+			}
+		}
+
 		h := db.Host{
 			ID:           uuid.New().String(),
 			Name:         p.Name,
@@ -310,13 +367,16 @@ func (h *HostHandler) ImportSSHConfig(c *gin.Context) {
 
 		if err := db.DB.Create(&h).Error; err == nil {
 			createdCount++
-			createdHosts = append(createdHosts, h)
+			importedHosts = append(importedHosts, h)
 		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Imported successfully",
-		"count":   createdCount,
-		"hosts":   createdHosts,
+		"count":   createdCount + updatedCount,
+		"created": createdCount,
+		"updated": updatedCount,
+		"skipped": skippedCount,
+		"hosts":   importedHosts,
 	})
 }
