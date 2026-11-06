@@ -165,14 +165,24 @@ func (h *TunnelHandler) Start(c *gin.Context) {
 		}
 	}
 
-	err := sshhub.Hub.StartLocalTunnel(
-		tunnel.ID,
-		info,
-		tunnel.BindHost,
-		tunnel.BindPort,
-		tunnel.TargetHost,
-		tunnel.TargetPort,
-	)
+	var err error
+	if strings.ToLower(tunnel.Type) == "socks5" || strings.ToLower(tunnel.Type) == "socks" {
+		err = sshhub.Hub.StartSocks5Tunnel(
+			tunnel.ID,
+			info,
+			tunnel.BindHost,
+			tunnel.BindPort,
+		)
+	} else {
+		err = sshhub.Hub.StartLocalTunnel(
+			tunnel.ID,
+			info,
+			tunnel.BindHost,
+			tunnel.BindPort,
+			tunnel.TargetHost,
+			tunnel.TargetPort,
+		)
+	}
 	if err != nil {
 		tunnel.Status = "error"
 		db.DB.Save(&tunnel)

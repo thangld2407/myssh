@@ -179,3 +179,43 @@ func TestTunnelBindHostValidation(t *testing.T) {
 		t.Errorf("Expected 201 Created for localhost bind_host, got %d", w.Code)
 	}
 }
+
+func TestSocks5TunnelCreationAndValidation(t *testing.T) {
+	setupTestDB(t)
+
+	cfg := &config.Config{
+		MasterKey: "test-master-key-32-bytes-long!!",
+	}
+	handler := NewTunnelHandler(cfg)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("user_id", "admin-1")
+		c.Next()
+	})
+	r.POST("/api/tunnels", handler.Create)
+
+	// SOCKS5 tunnel does not require TargetPort / TargetHost
+	socksReq := CreateTunnelRequest{
+		HostID:   "host-socks5",
+		Name:     "Dynamic Proxy",
+		Type:     "socks5",
+		BindHost: "127.0.0.1",
+		BindPort: 1080,
+	}
+	body, _ := json.Marshal(socksReq)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/tunnels", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Expected 201 Created for SOCKS5 tunnel, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var created db.Tunnel
+	json.Unmarshal(w.Body.Bytes(), &created)
+	if created.Type != "socks5" {
+		t.Errorf("Expected type socks5, got %s", created.Type)
+	}
+}
