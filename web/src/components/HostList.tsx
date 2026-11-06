@@ -357,6 +357,11 @@ export const HostList: React.FC<HostListProps> = ({
                           <span className="font-semibold text-slate-900 group-hover:text-black transition-colors text-xs">
                             {host.name}
                           </span>
+                          {host.is_production && (
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-600 text-white shadow-2xs tracking-wider">
+                              PROD
+                            </span>
+                          )}
                           {host.jump_host_id && (
                             <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-medium">
                               JumpHost
@@ -545,6 +550,11 @@ export const HostList: React.FC<HostListProps> = ({
                             <h3 className="font-semibold text-slate-900 text-xs group-hover:text-black transition-colors">
                               {host.name}
                             </h3>
+                            {host.is_production && (
+                              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-600 text-white shadow-2xs tracking-wider">
+                                PROD
+                              </span>
+                            )}
                             {/* Status Dot */}
                             <button
                               onClick={(e) => {

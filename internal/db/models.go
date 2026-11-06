@@ -43,6 +43,7 @@ type Host struct {
 	Credential   *Credential `gorm:"foreignKey:CredentialID" json:"credential,omitempty"`
 	JumpHostID         string      `gorm:"size:36" json:"jump_host_id,omitempty"`
 	HostKeyFingerprint string      `gorm:"size:128" json:"host_key_fingerprint,omitempty"`
+	IsProduction       bool        `gorm:"default:false" json:"is_production"`
 	Description        string      `gorm:"type:text" json:"description"`
 	CreatedAt    time.Time   `json:"created_at"`
 	UpdatedAt    time.Time   `json:"updated_at"`

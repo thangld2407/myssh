@@ -179,6 +179,8 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     };
   }, [hosts]);
 
+  const prodHosts = hosts.filter((h) => h.is_production);
+
   const sendBroadcast = (cmd: string) => {
     if (!cmd) return;
     Object.values(instances.current).forEach((inst) => {
@@ -192,6 +194,12 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
   const handleCommandSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastCommand.trim()) return;
+    if (prodHosts.length > 0) {
+      const confirmMsg = `Cảnh báo Production Guard: Danh sách broadcast có ${prodHosts.length} máy chủ Production (${prodHosts.map((h) => h.name).join(', ')}).\n\nBạn có chắc chắn muốn thực thi lệnh "${broadcastCommand}" đồng thời trên các server này không?`;
+      if (!window.confirm(confirmMsg)) {
+        return;
+      }
+    }
     sendBroadcast(broadcastCommand + '\n');
     setBroadcastCommand('');
   };
@@ -218,6 +226,12 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
               <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-xs font-mono font-semibold">
                 {hosts.length} Máy chủ
               </span>
+              {prodHosts.length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 text-xs font-mono font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-600 animate-pulse" />
+                  {prodHosts.length} PROD
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-500 font-normal">Gõ 1 lệnh và chạy đồng thời trên toàn bộ các server</p>
           </div>
@@ -289,6 +303,11 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
                   }`}
                 />
                 <span className="font-semibold text-zinc-100 truncate">{host.name}</span>
+                {host.is_production && (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-600 text-white shadow-2xs">
+                    PROD
+                  </span>
+                )}
                 <span className="text-zinc-500 text-[11px] truncate">({host.username}@{host.hostname})</span>
               </div>
 

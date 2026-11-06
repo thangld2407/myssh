@@ -27,6 +27,7 @@ export const HostModal: React.FC<HostModalProps> = ({
   const [tags, setTags] = useState(hostToEdit?.tags || '');
   const [credentialId, setCredentialId] = useState(hostToEdit?.credential_id || '');
   const [jumpHostId, setJumpHostId] = useState(hostToEdit?.jump_host_id || '');
+  const [isProduction, setIsProduction] = useState<boolean>(hostToEdit?.is_production || false);
   const [description, setDescription] = useState(hostToEdit?.description || '');
   const [fingerprint, setFingerprint] = useState(hostToEdit?.host_key_fingerprint || '');
   const [resettingFingerprint, setResettingFingerprint] = useState(false);
@@ -153,6 +154,7 @@ export const HostModal: React.FC<HostModalProps> = ({
         tags: tags.trim(),
         credential_id: credentialId,
         jump_host_id: jumpHostId || undefined,
+        is_production: isProduction,
         description: description.trim(),
       };
 
@@ -426,6 +428,32 @@ export const HostModal: React.FC<HostModalProps> = ({
                 ))}
             </select>
             <p className="text-[10px] text-slate-400 mt-1">Dùng khi server nằm trong Private Subnet cần đi qua Bastion</p>
+          </div>
+
+          {/* Production Guard Rails Toggle */}
+          <div className="p-3.5 rounded-xl border border-rose-200 bg-rose-50/50 flex items-start justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-rose-900">
+                  {t('hosts.productionServer', 'Production Guard (Môi trường Production)')}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-rose-600 text-white">
+                  PROD
+                </span>
+              </div>
+              <p className="text-[11px] text-rose-700 leading-relaxed">
+                {t('hosts.productionDesc', 'Bật cảnh báo bảo vệ: hiển thị viền đỏ và nhãn PROD nổi bật trên terminal, cảnh báo trước khi gõ lệnh trên môi trường thật.')}
+              </p>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-0.5">
+              <input
+                type="checkbox"
+                checked={isProduction}
+                onChange={(e) => setIsProduction(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+            </label>
           </div>
 
           {/* Row 6: Ghi chú */}

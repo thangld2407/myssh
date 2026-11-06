@@ -30,6 +30,7 @@ type CreateOrUpdateHostRequest struct {
 	Tags         string `json:"tags"`
 	CredentialID string `json:"credential_id" binding:"required"`
 	JumpHostID   string `json:"jump_host_id"`
+	IsProduction bool   `json:"is_production"`
 	Description  string `json:"description"`
 }
 
@@ -91,6 +92,7 @@ func (h *HostHandler) Create(c *gin.Context) {
 		Tags:         req.Tags,
 		CredentialID: req.CredentialID,
 		JumpHostID:   req.JumpHostID,
+		IsProduction: req.IsProduction,
 		Description:  req.Description,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -142,6 +144,7 @@ func (h *HostHandler) Update(c *gin.Context) {
 	host.Tags = req.Tags
 	host.CredentialID = req.CredentialID
 	host.JumpHostID = req.JumpHostID
+	host.IsProduction = req.IsProduction
 	host.Description = req.Description
 	host.UpdatedAt = time.Now()
 

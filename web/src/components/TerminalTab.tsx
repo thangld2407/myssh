@@ -353,6 +353,11 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
           <div className="flex items-center space-x-2">
             <TerminalIcon className="w-4 h-4 text-slate-700" />
             <span className="font-semibold text-slate-900 text-xs">{host.name}</span>
+            {host.is_production && (
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-600 text-white shadow-2xs tracking-wider animate-pulse">
+                PROD
+              </span>
+            )}
             <span className="text-slate-500 font-normal text-xs">
               ({host.username}@{host.hostname}:{host.port})
             </span>
@@ -521,6 +526,23 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
           setTimeout(() => fitAddonInstance.current?.fit(), 60);
         }}
       />
+
+      {/* Production Guard Banner */}
+      {host.is_production && (
+        <div className="bg-rose-950/90 border-y border-rose-800/80 px-4 py-1.5 flex items-center justify-between text-xs text-rose-200 shrink-0 select-none backdrop-blur-xs">
+          <div className="flex items-center gap-2">
+            <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white font-mono font-bold text-[10px] tracking-wider shadow-2xs">
+              PRODUCTION GUARD
+            </span>
+            <span className="font-medium text-rose-100 text-[11px]">
+              Cẩn trọng khi chạy lệnh! Mọi thay đổi đều ảnh hưởng trực tiếp đến môi trường production.
+            </span>
+          </div>
+          <span className="text-[11px] font-mono text-rose-300 hidden md:inline">
+            Host: {host.hostname}
+          </span>
+        </div>
+      )}
 
       {/* Main Terminal View (Supports Split-View with Embedded SFTP) */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">

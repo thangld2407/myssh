@@ -336,3 +336,76 @@ func TestHostExport_SSHConfig(t *testing.T) {
 	}
 }
 
+func TestHost_IsProductionGuard(t *testing.T) {
+	setupTestDB(t)
+	db.DB.Exec("DELETE FROM hosts")
+	db.DB.Exec("DELETE FROM credentials")
+
+	cfg := &config.Config{
+		MasterKey: "test-master-key-32-bytes-long!!",
+	}
+	handler := NewHostHandler(cfg)
+
+	r := gin.New()
+	r.POST("/api/hosts", handler.Create)
+	r.PUT("/api/hosts/:id", handler.Update)
+	r.GET("/api/hosts/:id", handler.Get)
+
+	// Seed credential
+	cred := db.Credential{
+		ID:            "cred-prod-test",
+		Name:          "Prod Cred",
+		Type:          "password",
+		EncryptedData: "dummy-data",
+		Nonce:         "dummy-nonce",
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+	db.DB.Create(&cred)
+
+	// 1. Create a host with IsProduction = true
+	reqCreate := CreateOrUpdateHostRequest{
+		Name:         "prod-payment-service",
+		Hostname:     "pay.production.internal",
+		Port:         22,
+		Username:     "sysadmin",
+		CredentialID: "cred-prod-test",
+		IsProduction: true,
+	}
+	body, _ := json.Marshal(reqCreate)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/hosts", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Expected 201 Created, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var created db.Host
+	json.Unmarshal(w.Body.Bytes(), &created)
+	if !created.IsProduction {
+		t.Errorf("Expected IsProduction = true, got false")
+	}
+
+	// 2. Update to IsProduction = false
+	reqUpdate := reqCreate
+	reqUpdate.IsProduction = false
+	bodyUpdate, _ := json.Marshal(reqUpdate)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PUT", "/api/hosts/"+created.ID, bytes.NewBuffer(bodyUpdate))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected 200 OK, got %d", w.Code)
+	}
+
+	var updated db.Host
+	json.Unmarshal(w.Body.Bytes(), &updated)
+	if updated.IsProduction {
+		t.Errorf("Expected updated IsProduction = false, got true")
+	}
+}
+
+
