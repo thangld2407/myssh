@@ -3,7 +3,23 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
-import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap, Activity } from 'lucide-react';
+import { SearchAddon } from '@xterm/addon-search';
+import {
+  RefreshCw,
+  X,
+  Maximize2,
+  Trash2,
+  Clock,
+  Terminal as TerminalIcon,
+  HardDrive,
+  Columns,
+  Code2,
+  Zap,
+  Activity,
+  Search,
+  ChevronUp,
+  ChevronDown,
+} from 'lucide-react';
 import { Host, FeatureFlags } from '../types';
 import { api, getAuthToken } from '../services/api';
 import { SftpPanel } from './SftpPanel';
@@ -21,6 +37,7 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermInstance = useRef<Terminal | null>(null);
   const fitAddonInstance = useRef<FitAddon | null>(null);
+  const searchAddonInstance = useRef<SearchAddon | null>(null);
   const wsInstance = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected'>('connecting');
@@ -29,6 +46,9 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
   const [showSplitSftp, setShowSplitSftp] = useState<boolean>(false);
   const [showSnippetModal, setShowSnippetModal] = useState<boolean>(false);
   const [showMetrics, setShowMetrics] = useState<boolean>(true);
+  const [showSearch, setShowSearch] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [caseSensitive, setCaseSensitive] = useState<boolean>(false);
 
   const snippets = [
     { label: 'ls -la', cmd: 'ls -la\n' },
@@ -132,6 +152,20 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     } catch {
       // Gracefully fall back to DOM renderer
     }
+
+    // In-terminal buffer search addon with Ctrl+F / Cmd+F shortcut
+    const searchAddon = new SearchAddon();
+    searchAddonInstance.current = searchAddon;
+    term.loadAddon(searchAddon);
+
+    term.attachCustomKeyEventHandler((e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f' && e.type === 'keydown') {
+        e.preventDefault();
+        setShowSearch(true);
+        return false;
+      }
+      return true;
+    });
 
     // Initial fit
     setTimeout(() => {
@@ -293,6 +327,24 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     }
   };
 
+  const handleFindNext = () => {
+    if (searchQuery && searchAddonInstance.current) {
+      searchAddonInstance.current.findNext(searchQuery, { caseSensitive });
+    }
+  };
+
+  const handleFindPrevious = () => {
+    if (searchQuery && searchAddonInstance.current) {
+      searchAddonInstance.current.findPrevious(searchQuery, { caseSensitive });
+    }
+  };
+
+  const handleCloseSearch = () => {
+    setShowSearch(false);
+    searchAddonInstance.current?.clearDecorations?.();
+    xtermInstance.current?.focus();
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#09090b] text-zinc-200 min-h-0">
       {/* Control Bar (Light Minimalist Toolbar) */}
@@ -396,6 +448,18 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
           )}
 
           <button
+            onClick={() => setShowSearch(!showSearch)}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg active:scale-90 transition ${
+              showSearch
+                ? 'bg-emerald-50 text-emerald-700'
+                : 'hover:bg-slate-100 text-slate-500 hover:text-slate-900'
+            }`}
+            title="Tìm kiếm trong buffer (Ctrl+F)"
+          >
+            <Search className="w-3.5 h-3.5" />
+          </button>
+
+          <button
             onClick={() => xtermInstance.current?.clear()}
             className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-90 transition"
             title="Xóa màn hình (Clear)"
@@ -461,6 +525,71 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
       {/* Main Terminal View (Supports Split-View with Embedded SFTP) */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         <div className="flex-1 bg-[#09090b] px-3 pt-2 pb-1 overflow-hidden relative h-full min-h-0 flex flex-col">
+          {/* Floating In-Terminal Buffer Search Bar (Ctrl+F) */}
+          {showSearch && (
+            <div className="absolute top-3 right-5 z-20 flex items-center gap-1.5 bg-slate-900/95 border border-slate-700 rounded-xl px-2.5 py-1.5 shadow-2xl backdrop-blur-md text-xs">
+              <input
+                type="text"
+                autoFocus
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (searchAddonInstance.current && e.target.value) {
+                    searchAddonInstance.current.findNext(e.target.value, { caseSensitive });
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    if (e.shiftKey) handleFindPrevious();
+                    else handleFindNext();
+                  } else if (e.key === 'Escape') {
+                    handleCloseSearch();
+                  }
+                }}
+                placeholder="Tìm trong buffer..."
+                className="w-48 bg-slate-800 text-slate-100 placeholder-slate-400 text-xs px-2.5 py-1 rounded-md border border-slate-700 focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                onClick={() => {
+                  const nextCase = !caseSensitive;
+                  setCaseSensitive(nextCase);
+                  if (searchQuery && searchAddonInstance.current) {
+                    searchAddonInstance.current.findNext(searchQuery, { caseSensitive: nextCase });
+                  }
+                }}
+                className={`px-1.5 py-1 rounded font-mono text-[11px] font-semibold border transition ${
+                  caseSensitive
+                    ? 'bg-emerald-600 text-white border-emerald-500'
+                    : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
+                }`}
+                title="Phân biệt chữ hoa / thường"
+              >
+                Aa
+              </button>
+              <button
+                onClick={handleFindPrevious}
+                className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 active:scale-95 transition"
+                title="Tìm trước (Shift+Enter)"
+              >
+                <ChevronUp className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleFindNext}
+                className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 active:scale-95 transition"
+                title="Tìm tiếp theo (Enter)"
+              >
+                <ChevronDown className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleCloseSearch}
+                className="p-1 rounded text-slate-400 hover:text-slate-200 hover:bg-slate-800 active:scale-95 transition ml-1"
+                title="Đóng (Esc)"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           <div ref={terminalRef} className="w-full h-full min-h-0 flex-1 overflow-hidden" />
         </div>
 
@@ -486,7 +615,11 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
       <SnippetModal
         isOpen={showSnippetModal}
         onClose={() => setShowSnippetModal(false)}
+        host={host}
         onExecuteCommand={(cmd) => {
+          sendSnippet(cmd + '\n');
+        }}
+        onSelect={(cmd) => {
           sendSnippet(cmd + '\n');
         }}
       />

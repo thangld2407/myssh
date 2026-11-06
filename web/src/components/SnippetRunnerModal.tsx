@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { X, Play, Copy, Check, Terminal, Variable } from 'lucide-react';
-import { Snippet } from '../types';
+import { Snippet, Host } from '../types';
 
 interface SnippetRunnerModalProps {
   snippet: Snippet;
+  host?: Host;
   onClose: () => void;
   onExecute: (resolvedCommand: string) => void;
 }
 
 export const SnippetRunnerModal: React.FC<SnippetRunnerModalProps> = ({
   snippet,
+  host,
   onClose,
   onExecute,
 }) => {
@@ -28,15 +30,29 @@ export const SnippetRunnerModal: React.FC<SnippetRunnerModalProps> = ({
     }
     const initialVars: Record<string, string> = {};
     matches.forEach((v) => {
-      // Default sample values based on common variable names
-      if (v.toLowerCase().includes('port')) initialVars[v] = '8080';
-      else if (v.toLowerCase().includes('lines')) initialVars[v] = '100';
-      else if (v.toLowerCase().includes('container')) initialVars[v] = 'web-app';
-      else if (v.toLowerCase().includes('service')) initialVars[v] = 'nginx';
-      else initialVars[v] = '';
+      const vUpper = v.toUpperCase();
+      if (host && (vUpper === 'HOST' || vUpper === 'HOSTNAME')) {
+        initialVars[v] = host.hostname || host.name;
+      } else if (host && (vUpper === 'USER' || vUpper === 'USERNAME')) {
+        initialVars[v] = host.username;
+      } else if (host && vUpper === 'PORT') {
+        initialVars[v] = String(host.port || 22);
+      } else if (host && (vUpper === 'NAME' || vUpper === 'SERVER')) {
+        initialVars[v] = host.name;
+      } else if (v.toLowerCase().includes('port')) {
+        initialVars[v] = host?.port ? String(host.port) : '8080';
+      } else if (v.toLowerCase().includes('lines')) {
+        initialVars[v] = '100';
+      } else if (v.toLowerCase().includes('container')) {
+        initialVars[v] = 'web-app';
+      } else if (v.toLowerCase().includes('service')) {
+        initialVars[v] = 'nginx';
+      } else {
+        initialVars[v] = '';
+      }
     });
     setVariables(initialVars);
-  }, [snippet]);
+  }, [snippet, host]);
 
   const getResolvedCommand = () => {
     let resolved = snippet.command;

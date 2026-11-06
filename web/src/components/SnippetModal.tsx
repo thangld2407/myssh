@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Folder
 } from 'lucide-react';
-import { Snippet } from '../types';
+import { Snippet, Host } from '../types';
 import { api } from '../services/api';
 import { SnippetRunnerModal } from './SnippetRunnerModal';
 
@@ -22,12 +22,16 @@ interface SnippetModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExecuteCommand?: (cmd: string) => void;
+  onSelect?: (cmd: string) => void;
+  host?: Host;
 }
 
 export const SnippetModal: React.FC<SnippetModalProps> = ({
   isOpen,
   onClose,
   onExecuteCommand,
+  onSelect,
+  host,
 }) => {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(false);
@@ -491,10 +495,12 @@ export const SnippetModal: React.FC<SnippetModalProps> = ({
       {runningSnippet && (
         <SnippetRunnerModal
           snippet={runningSnippet}
+          host={host}
           onClose={() => setRunningSnippet(null)}
           onExecute={(resolvedCmd) => {
-            if (onExecuteCommand) {
-              onExecuteCommand(resolvedCmd);
+            const runner = onExecuteCommand || onSelect;
+            if (runner) {
+              runner(resolvedCmd);
               onClose();
             }
           }}
