@@ -380,3 +380,48 @@ func (h *HostHandler) ImportSSHConfig(c *gin.Context) {
 		"hosts":   importedHosts,
 	})
 }
+
+// ExportSSHConfig exports all visible hosts into OpenSSH ~/.ssh/config format.
+func (h *HostHandler) ExportSSHConfig(c *gin.Context) {
+	var hosts []db.Host
+	query := db.DB.Order("folder ASC, name ASC")
+	var err error
+	query, err = ScopeToOwner(c, query)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied", "error_code": "FORBIDDEN"})
+		return
+	}
+	if err := query.Find(&hosts).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch hosts", "error_code": "DB_ERROR"})
+		return
+	}
+
+	jumpHostNames := make(map[string]string)
+	for _, host := range hosts {
+		if host.ID != "" && host.Name != "" {
+			jumpHostNames[host.ID] = host.Name
+		}
+	}
+
+	var exportList []importer.ExportableHost
+	for _, host := range hosts {
+		eh := importer.ExportableHost{
+			Name:     host.Name,
+			Hostname: host.Hostname,
+			Port:     host.Port,
+			Username: host.Username,
+		}
+		if host.JumpHostID != "" {
+			if jn, ok := jumpHostNames[host.JumpHostID]; ok {
+				eh.ProxyJump = jn
+			}
+		}
+		exportList = append(exportList, eh)
+	}
+
+	configData := importer.GenerateSSHConfig(exportList)
+
+	c.Header("Content-Disposition", "attachment; filename=\"config\"")
+	c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte(configData))
+}
+

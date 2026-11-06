@@ -140,6 +140,7 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		protected.GET("/hosts", middleware.RequireRole("admin", "member", "viewer"), hostHandler.List)
 		protected.POST("/hosts", middleware.RequireRole("admin"), hostHandler.Create)
 		protected.POST("/hosts/import", middleware.RequireRole("admin"), featureGuard(cfg.Features.EnableImportSSHConfig, "Import SSH Config"), hostHandler.ImportSSHConfig)
+		protected.GET("/hosts/export/ssh-config", middleware.RequireRole("admin", "member", "viewer"), hostHandler.ExportSSHConfig)
 		protected.GET("/hosts/:id", middleware.RequireRole("admin", "member", "viewer"), hostHandler.Get)
 		protected.PUT("/hosts/:id", middleware.RequireRole("admin"), hostHandler.Update)
 		protected.DELETE("/hosts/:id", middleware.RequireRole("admin"), hostHandler.Delete)

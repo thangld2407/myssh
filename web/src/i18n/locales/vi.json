@@ -141,6 +141,8 @@
     "deleteFailed": "Lỗi xóa máy chủ: ",
     "importSshConfig": "Nhập từ ~/.ssh/config",
     "importConfig": "Import Config",
+    "exportSshConfig": "Xuất ra ~/.ssh/config",
+    "exportConfig": "Xuất Config",
     "pingAll": "Ping tất cả",
     "pinging": "Đang ping...",
     "name": "Tên Máy Chủ",

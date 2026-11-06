@@ -141,6 +141,8 @@
     "deleteFailed": "Failed to delete host: ",
     "importSshConfig": "Import ~/.ssh/config",
     "importConfig": "Import Config",
+    "exportSshConfig": "Export ~/.ssh/config",
+    "exportConfig": "Export Config",
     "pingAll": "Ping All",
     "pinging": "Pinging...",
     "name": "Server Label",

@@ -53,3 +53,44 @@ Host internal-db
 		t.Errorf("host[2] mismatch: %+v", hosts[2])
 	}
 }
+
+func TestGenerateSSHConfig_RoundTrip(t *testing.T) {
+	inputHosts := []ExportableHost{
+		{
+			Name:         "prod-api",
+			Hostname:     "192.168.1.50",
+			Username:     "ubuntu",
+			Port:         22,
+			ProxyJump:    "bastion",
+			IdentityFile: "~/.ssh/id_ed25519",
+		},
+		{
+			Name:     "bastion",
+			Hostname: "203.0.113.10",
+			Username: "ec2-user",
+			Port:     2222,
+		},
+	}
+
+	configStr := GenerateSSHConfig(inputHosts)
+	if !strings.Contains(configStr, "Host prod-api") || !strings.Contains(configStr, "ProxyJump bastion") {
+		t.Fatalf("generated config missing expected keywords:\n%s", configStr)
+	}
+
+	parsed, err := ParseSSHConfig(strings.NewReader(configStr))
+	if err != nil {
+		t.Fatalf("failed to re-parse generated config: %v", err)
+	}
+
+	if len(parsed) != 2 {
+		t.Fatalf("expected 2 parsed hosts, got %d", len(parsed))
+	}
+
+	if parsed[0].Name != "prod-api" || parsed[0].ProxyJump != "bastion" || parsed[0].IdentityFile != "~/.ssh/id_ed25519" {
+		t.Errorf("parsed host[0] mismatch: %+v", parsed[0])
+	}
+	if parsed[1].Name != "bastion" || parsed[1].Port != 2222 {
+		t.Errorf("parsed host[1] mismatch: %+v", parsed[1])
+	}
+}
+

@@ -16,6 +16,7 @@ import {
   LayoutGrid,
   KeyRound,
   FileUp,
+  FileDown,
   Zap,
   MoreVertical,
   Activity,
@@ -142,6 +143,23 @@ export const HostList: React.FC<HostListProps> = ({
     }
   };
 
+  const handleExportSSHConfig = async () => {
+    try {
+      const configText = await api.exportSSHConfig();
+      const blob = new Blob([configText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'config';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Lỗi xuất cấu hình SSH: ' + (err.message || 'Không thể xuất file'));
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-[#F8FAFC] text-slate-800">
       {/* Top Application Toolbar */}
@@ -214,6 +232,16 @@ export const HostList: React.FC<HostListProps> = ({
               <span className="hidden sm:inline">{t('hosts.importConfig')}</span>
             </button>
           )}
+
+          {/* Export SSH Config Button */}
+          <button
+            onClick={handleExportSSHConfig}
+            className="h-9 px-3 rounded-lg bg-white hover:bg-slate-50 active:scale-95 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 border border-slate-200 shadow-2xs"
+            title={t('hosts.exportSshConfig')}
+          >
+            <FileDown className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">{t('hosts.exportConfig')}</span>
+          </button>
 
           {/* Primary Action Button: Modern Solid Black */}
           <button

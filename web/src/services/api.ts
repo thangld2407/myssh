@@ -175,6 +175,18 @@ export const api = {
       method: 'POST',
     }),
   getHostMetrics: (id: string) => request<ServerMetrics>(`/hosts/${id}/metrics`),
+  exportSSHConfig: async () => {
+    const token = getAuthToken();
+    const res = await fetch(`${API_BASE}/hosts/export/ssh-config`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) {
+      throw new Error('Failed to export SSH config');
+    }
+    return res.text();
+  },
   importSSHConfig: (data: {
     content: string;
     default_credential_id?: string;

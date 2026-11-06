@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/myssh/myssh/internal/config"
@@ -272,3 +274,65 @@ Host db-primary
 		t.Errorf("Expected dry run existing_count 1, got %v", resDry["existing_count"])
 	}
 }
+
+func TestHostExport_SSHConfig(t *testing.T) {
+	setupTestDB(t)
+	db.DB.Exec("DELETE FROM hosts")
+	db.DB.Exec("DELETE FROM credentials")
+
+	cfg := &config.Config{
+		MasterKey: "test-master-key-32-bytes-long!!",
+	}
+	handler := NewHostHandler(cfg)
+
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set("role", "admin")
+		c.Next()
+	})
+	r.GET("/api/hosts/export/ssh-config", handler.ExportSSHConfig)
+
+	// Create a jump host and a target host
+	jump := db.Host{
+		ID:        "jump-host-uuid",
+		Name:      "bastion-jump",
+		Hostname:  "bastion.example.com",
+		Port:      2222,
+		Username:  "jumpuser",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	db.DB.Create(&jump)
+
+	target := db.Host{
+		ID:         "target-host-uuid",
+		Name:       "internal-node",
+		Hostname:   "10.0.0.15",
+		Port:       22,
+		Username:   "appuser",
+		JumpHostID: "jump-host-uuid",
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
+	db.DB.Create(&target)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/hosts/export/ssh-config", nil)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("Expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	body := w.Body.String()
+	if !strings.Contains(body, "Host bastion-jump") || !strings.Contains(body, "Host internal-node") {
+		t.Errorf("Exported config missing host entries: %s", body)
+	}
+	if !strings.Contains(body, "ProxyJump bastion-jump") {
+		t.Errorf("Exported config missing ProxyJump mapping: %s", body)
+	}
+	if !strings.Contains(body, "Port 2222") {
+		t.Errorf("Exported config missing custom port: %s", body)
+	}
+}
+
