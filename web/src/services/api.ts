@@ -206,6 +206,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ path }),
     }),
+  renameSftp: (hostId: string, oldPath: string, newPath: string) =>
+    request<{ message: string; old_path: string; new_path: string }>(`/sftp/${hostId}/rename`, {
+      method: 'POST',
+      body: JSON.stringify({ old_path: oldPath, new_path: newPath }),
+    }),
+  chmodSftp: (hostId: string, path: string, mode: string) =>
+    request<{ message: string; path: string; mode: string }>(`/sftp/${hostId}/chmod`, {
+      method: 'POST',
+      body: JSON.stringify({ path, mode }),
+    }),
   deleteSftp: (hostId: string, path: string) =>
     request<{ message: string }>(`/sftp/${hostId}/delete?path=${encodeURIComponent(path)}`, {
       method: 'DELETE',

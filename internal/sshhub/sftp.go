@@ -3,6 +3,7 @@ package sshhub
 import (
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"time"
 
@@ -188,6 +189,12 @@ func (s *SFTPBridge) Remove(remotePath string) error {
 func (s *SFTPBridge) Rename(oldPath, newPath string) error {
 	return s.retryIfBroken(func() error {
 		return s.sftpClient.Rename(oldPath, newPath)
+	})
+}
+
+func (s *SFTPBridge) Chmod(remotePath string, mode os.FileMode) error {
+	return s.retryIfBroken(func() error {
+		return s.sftpClient.Chmod(remotePath, mode)
 	})
 }
 

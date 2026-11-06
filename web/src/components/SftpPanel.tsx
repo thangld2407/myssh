@@ -14,7 +14,9 @@ import {
   AlertCircle,
   Search,
   HardDrive,
-  Edit3
+  Edit3,
+  Pencil,
+  Shield
 } from 'lucide-react';
 import { Host, FileItem } from '../types';
 import { api } from '../services/api';
@@ -49,6 +51,10 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
   const [newFolderName, setNewFolderName] = useState('');
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [editingFile, setEditingFile] = useState<FileItem | null>(null);
+  const [renamingItem, setRenamingItem] = useState<FileItem | null>(null);
+  const [newName, setNewName] = useState('');
+  const [chmodItem, setChmodItem] = useState<FileItem | null>(null);
+  const [newMode, setNewMode] = useState('0644');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadDirectory = async (path: string) => {
@@ -143,6 +149,39 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
       loadDirectory(currentPath);
     } catch (err: any) {
       alert('Lỗi tạo thư mục: ' + err.message);
+    }
+  };
+
+  const handleRename = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!renamingItem || !newName.trim() || newName === renamingItem.name) {
+      setRenamingItem(null);
+      return;
+    }
+    const idx = renamingItem.path.lastIndexOf('/');
+    const parentDir = idx >= 0 ? renamingItem.path.substring(0, idx) : '.';
+    const newPath = parentDir === '.' ? newName.trim() : `${parentDir}/${newName.trim()}`;
+    try {
+      await api.renameSftp(host.id, renamingItem.path, newPath);
+      setRenamingItem(null);
+      loadDirectory(currentPath);
+    } catch (err: any) {
+      alert('Lỗi đổi tên: ' + err.message);
+    }
+  };
+
+  const handleChmod = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chmodItem || !newMode.trim()) {
+      setChmodItem(null);
+      return;
+    }
+    try {
+      await api.chmodSftp(host.id, chmodItem.path, newMode.trim());
+      setChmodItem(null);
+      loadDirectory(currentPath);
+    } catch (err: any) {
+      alert('Lỗi phân quyền: ' + err.message);
     }
   };
 
@@ -318,6 +357,30 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        setRenamingItem(item);
+                        setNewName(item.name);
+                      }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-90 transition"
+                      title="Đổi tên"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    {!isEmbedded && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setChmodItem(item);
+                          setNewMode(item.is_dir ? '0755' : '0644');
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-900 active:scale-90 transition"
+                        title="Phân quyền (chmod)"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         handleDelete(item);
                       }}
                       className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 active:scale-90 transition"
@@ -367,6 +430,80 @@ export const SftpPanel: React.FC<SftpPanelProps> = ({ host, isEmbedded = false, 
                 className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold transition shadow-xs"
               >
                 Tạo
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal Rename */}
+      {renamingItem && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-backdrop">
+          <form onSubmit={handleRename} className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-modal">
+            <h3 className="text-xs font-semibold text-slate-900 mb-1">Đổi tên</h3>
+            <p className="text-[11px] text-slate-500 mb-3 font-mono truncate">{renamingItem.name}</p>
+            <input
+              type="text"
+              autoFocus
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Tên mới..."
+              className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 mb-4 font-mono"
+            />
+            <div className="flex justify-end space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setRenamingItem(null)}
+                className="h-9 px-4 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition active:scale-95"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold transition shadow-xs"
+              >
+                Lưu
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal Chmod */}
+      {chmodItem && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-backdrop">
+          <form onSubmit={handleChmod} className="bg-white border border-slate-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-modal">
+            <h3 className="text-xs font-semibold text-slate-900 mb-1">Phân quyền tập tin (chmod)</h3>
+            <p className="text-[11px] text-slate-500 mb-3 font-mono truncate">{chmodItem.name}</p>
+            <div className="space-y-2 mb-4">
+              <label className="block text-[11px] text-slate-600 font-medium">Quyền bát phân (Octal mode):</label>
+              <input
+                type="text"
+                autoFocus
+                value={newMode}
+                onChange={(e) => setNewMode(e.target.value)}
+                placeholder="0755, 0644, 0777..."
+                className="w-full h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-slate-900 font-mono"
+              />
+              <div className="flex gap-2 text-[10px] text-slate-400 font-mono">
+                <button type="button" onClick={() => setNewMode('0644')} className="hover:text-slate-700 underline">0644 (File rw-r--r--)</button>
+                <button type="button" onClick={() => setNewMode('0755')} className="hover:text-slate-700 underline">0755 (Exec rwxr-xr-x)</button>
+                <button type="button" onClick={() => setNewMode('0600')} className="hover:text-slate-700 underline">0600 (Secret rw-------)</button>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-2.5">
+              <button
+                type="button"
+                onClick={() => setChmodItem(null)}
+                className="h-9 px-4 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100 transition active:scale-95"
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                className="h-9 px-4 rounded-lg bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-semibold transition shadow-xs"
+              >
+                Áp dụng
               </button>
             </div>
           </form>

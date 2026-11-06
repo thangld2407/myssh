@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/myssh/myssh/internal/config"
@@ -191,6 +193,72 @@ func (h *SFTPHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Item deleted successfully"})
+}
+
+func (h *SFTPHandler) Rename(c *gin.Context) {
+	hostID := c.Param("host_id")
+	var req struct {
+		OldPath string `json:"old_path" binding:"required"`
+		NewPath string `json:"new_path" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "error_code": "INVALID_PARAMS"})
+		return
+	}
+
+	bridge, err := h.getBridge(c, hostID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer bridge.Close()
+
+	if err := bridge.Rename(req.OldPath, req.NewPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "error_code": "SFTP_RENAME_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Item renamed successfully",
+		"old_path": req.OldPath,
+		"new_path": req.NewPath,
+	})
+}
+
+func (h *SFTPHandler) Chmod(c *gin.Context) {
+	hostID := c.Param("host_id")
+	var req struct {
+		Path string `json:"path" binding:"required"`
+		Mode string `json:"mode" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error(), "error_code": "INVALID_PARAMS"})
+		return
+	}
+
+	parsedMode, err := strconv.ParseUint(req.Mode, 8, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid octal file mode (e.g. 0755 or 0644)", "error_code": "INVALID_MODE"})
+		return
+	}
+
+	bridge, err := h.getBridge(c, hostID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	defer bridge.Close()
+
+	if err := bridge.Chmod(req.Path, os.FileMode(parsedMode)); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "error_code": "SFTP_CHMOD_FAILED"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Permissions updated successfully",
+		"path":    req.Path,
+		"mode":    fmt.Sprintf("%04o", parsedMode),
+	})
 }
 
 const maxEditableFileSize = 5 * 1024 * 1024 // 5MB limit for inline text editor

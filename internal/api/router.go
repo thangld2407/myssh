@@ -159,6 +159,8 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 			sftp.GET("/:host_id/download", middleware.RequireRole("admin", "member"), sftpHandler.Download)
 			sftp.POST("/:host_id/upload", middleware.RequireRole("admin", "member"), sftpHandler.Upload)
 			sftp.POST("/:host_id/mkdir", middleware.RequireRole("admin", "member"), sftpHandler.Mkdir)
+			sftp.POST("/:host_id/rename", middleware.RequireRole("admin", "member"), sftpHandler.Rename)
+			sftp.POST("/:host_id/chmod", middleware.RequireRole("admin", "member"), sftpHandler.Chmod)
 			sftp.DELETE("/:host_id/delete", middleware.RequireRole("admin", "member"), sftpHandler.Delete)
 		}
 
