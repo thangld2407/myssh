@@ -36,4 +36,19 @@ func TestCORS_AllowedOrigins(t *testing.T) {
 	if w.Header().Get("Access-Control-Allow-Origin") == "https://attacker.com" {
 		t.Errorf("Untrusted origin must not receive Access-Control-Allow-Origin header")
 	}
+
+	// 3. Default behavior (empty AllowedOrigins) should allow private IP on custom ports
+	cfgDefault := &config.Config{
+		JWTSecret: "test-cors-jwt-secret-key-32b!",
+	}
+	rDefault := SetupRouter(cfgDefault)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("OPTIONS", "/api/system/features", nil)
+	req.Header.Set("Origin", "http://192.168.1.50:9090")
+	req.Header.Set("Access-Control-Request-Method", "GET")
+	rDefault.ServeHTTP(w, req)
+
+	if w.Header().Get("Access-Control-Allow-Origin") != "http://192.168.1.50:9090" {
+		t.Errorf("Expected private LAN origin to be allowed by default, got %q", w.Header().Get("Access-Control-Allow-Origin"))
+	}
 }

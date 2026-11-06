@@ -42,18 +42,19 @@ if command -v docker &> /dev/null; then
   echo -e "${YELLOW}[?] Bạn có muốn cài đặt nhanh qua Docker không? [Y/n]${NC}"
   read -r USE_DOCKER || USE_DOCKER="Y"
   if [[ "$USE_DOCKER" =~ ^[Yy]$ || -z "$USE_DOCKER" ]]; then
-    echo -e "${GREEN}[+] Khởi chạy MySSH Container qua Docker...${NC}"
+    APP_PORT="${MYSSH_PORT:-${PORT:-8080}}"
+    echo -e "${GREEN}[+] Khởi chạy MySSH Container qua Docker trên cổng ${APP_PORT}...${NC}"
     docker run -d \
       --name myssh \
       --restart unless-stopped \
-      -p 8080:8080 \
+      -p "${APP_PORT}:${APP_PORT}" \
       -v myssh_data:/app/data \
-      -e MYSSH_PORT=8080 \
-      ghcr.io/myssh/myssh:latest || docker run -d --name myssh -p 8080:8080 myssh:latest
+      -e PORT="${APP_PORT}" \
+      ghcr.io/myssh/myssh:latest || docker run -d --name myssh -p "${APP_PORT}:${APP_PORT}" -e PORT="${APP_PORT}" myssh:latest
 
     echo -e "\n${GREEN}================================================================${NC}"
     echo -e "${GREEN}🎉 Cài đặt MySSH thành công!${NC}"
-    echo -e "Truy cập ngay: ${BLUE}http://localhost:8080${NC} hoặc IP máy chủ của bạn."
+    echo -e "Truy cập ngay: ${BLUE}http://localhost:${APP_PORT}${NC} hoặc IP máy chủ của bạn."
     echo -e "Khởi tạo tài khoản: ${YELLOW}Truy cập web để tự đặt mật khẩu quản trị viên an toàn (Setup Wizard)${NC}"
     echo -e "${GREEN}================================================================${NC}\n"
     exit 0

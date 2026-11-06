@@ -223,3 +223,50 @@ func TestLoad_SecretsPersistenceAcrossRestarts(t *testing.T) {
 		t.Errorf("Second boot should reload identical KDFSalt")
 	}
 }
+
+func TestParsePort(t *testing.T) {
+	origArgs := os.Args
+	defer func() { os.Args = origArgs }()
+
+	// 1. Default fallback
+	os.Args = []string{"myssh"}
+	t.Setenv("PORT", "")
+	t.Setenv("MYSSH_PORT", "")
+	t.Setenv("SERVER_PORT", "")
+	if got := parsePort(); got != "8080" {
+		t.Errorf("Expected 8080 fallback, got %s", got)
+	}
+
+	// 2. Env PORT
+	t.Setenv("PORT", "3000")
+	if got := parsePort(); got != "3000" {
+		t.Errorf("Expected 3000 from PORT, got %s", got)
+	}
+
+	// 3. Env MYSSH_PORT
+	t.Setenv("PORT", "")
+	t.Setenv("MYSSH_PORT", "4000")
+	if got := parsePort(); got != "4000" {
+		t.Errorf("Expected 4000 from MYSSH_PORT, got %s", got)
+	}
+
+	// 4. CLI flag -p
+	t.Setenv("PORT", "8080")
+	os.Args = []string{"myssh", "-p", "9090"}
+	if got := parsePort(); got != "9090" {
+		t.Errorf("Expected 9090 from CLI flag -p, got %s", got)
+	}
+
+	// 5. CLI flag --port=X
+	os.Args = []string{"myssh", "--port=7070"}
+	if got := parsePort(); got != "7070" {
+		t.Errorf("Expected 7070 from CLI flag --port=, got %s", got)
+	}
+
+	// 6. Positional argument
+	os.Args = []string{"myssh", "5000"}
+	if got := parsePort(); got != "5000" {
+		t.Errorf("Expected 5000 from positional arg, got %s", got)
+	}
+}
+

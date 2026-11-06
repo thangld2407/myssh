@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -15,6 +16,20 @@ import (
 	"github.com/myssh/myssh/internal/db"
 	"golang.org/x/crypto/ssh"
 )
+
+// IsPrivate172 checks whether an IP is in the RFC 1918 private block 172.16.0.0/12.
+func IsPrivate172(hostname string) bool {
+	if !strings.HasPrefix(hostname, "172.") {
+		return false
+	}
+	parts := strings.Split(hostname, ".")
+	if len(parts) >= 2 {
+		if octet, err := strconv.Atoi(parts[1]); err == nil && octet >= 16 && octet <= 31 {
+			return true
+		}
+	}
+	return false
+}
 
 // IsOriginAllowed validates whether an HTTP/WebSocket Origin header is permissible.
 func IsOriginAllowed(r *http.Request, allowedOrigins []string) bool {
@@ -29,12 +44,22 @@ func IsOriginAllowed(r *http.Request, allowedOrigins []string) bool {
 	}
 
 	if len(allowedOrigins) == 0 {
-		// Default development allowance: localhost and loopback interfaces
+		// Default development allowance: localhost, loopback, mDNS, and private IP ranges
 		if strings.HasPrefix(origin, "http://localhost:") ||
 			strings.HasPrefix(origin, "http://127.0.0.1:") ||
 			strings.HasPrefix(origin, "https://localhost:") ||
 			strings.HasPrefix(origin, "https://127.0.0.1:") {
 			return true
+		}
+		if err == nil && u.Hostname() != "" {
+			h := strings.ToLower(u.Hostname())
+			if h == "localhost" || h == "127.0.0.1" || h == "::1" ||
+				strings.HasSuffix(h, ".local") ||
+				strings.HasPrefix(h, "192.168.") ||
+				strings.HasPrefix(h, "10.") ||
+				IsPrivate172(h) {
+				return true
+			}
 		}
 		return false
 	}

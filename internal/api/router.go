@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"github.com/myssh/myssh/internal/config"
 	"github.com/myssh/myssh/internal/db"
 	"github.com/myssh/myssh/internal/middleware"
+	"github.com/myssh/myssh/internal/sshhub"
 	"github.com/myssh/myssh/web"
 )
 
@@ -66,12 +68,25 @@ func SetupRouter(cfg *config.Config) *gin.Engine {
 		corsConfig.AllowOrigins = cfg.AllowedOrigins
 	} else {
 		corsConfig.AllowOriginFunc = func(origin string) bool {
-			if origin == "" ||
-				strings.HasPrefix(origin, "http://localhost:") ||
+			if origin == "" {
+				return true
+			}
+			if strings.HasPrefix(origin, "http://localhost:") ||
 				strings.HasPrefix(origin, "http://127.0.0.1:") ||
 				strings.HasPrefix(origin, "https://localhost:") ||
 				strings.HasPrefix(origin, "https://127.0.0.1:") {
 				return true
+			}
+			u, err := url.Parse(origin)
+			if err == nil && u.Hostname() != "" {
+				h := strings.ToLower(u.Hostname())
+				if h == "localhost" || h == "127.0.0.1" || h == "::1" ||
+					strings.HasSuffix(h, ".local") ||
+					strings.HasPrefix(h, "192.168.") ||
+					strings.HasPrefix(h, "10.") ||
+					sshhub.IsPrivate172(h) {
+					return true
+				}
 			}
 			return false
 		}

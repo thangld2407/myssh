@@ -123,13 +123,56 @@ func loadSecretsFile(filePath string) map[string]string {
 	return secrets
 }
 
+// parsePort resolves the listening port by checking:
+// 1. Command-line flags and arguments (-p, -port, --port, --port=X, -p=X, or a single positional argument like "3000")
+// 2. Environment variables: PORT, MYSSH_PORT, SERVER_PORT
+// 3. Fallback default: "8080"
+func parsePort() string {
+	for i := 1; i < len(os.Args); i++ {
+		arg := os.Args[i]
+		if (arg == "-p" || arg == "-port" || arg == "--port") && i+1 < len(os.Args) {
+			val := os.Args[i+1]
+			if p, err := strconv.Atoi(val); err == nil && p > 0 && p <= 65535 {
+				return val
+			}
+		}
+		if strings.HasPrefix(arg, "--port=") {
+			val := strings.TrimPrefix(arg, "--port=")
+			if p, err := strconv.Atoi(val); err == nil && p > 0 && p <= 65535 {
+				return val
+			}
+		}
+		if strings.HasPrefix(arg, "-p=") {
+			val := strings.TrimPrefix(arg, "-p=")
+			if p, err := strconv.Atoi(val); err == nil && p > 0 && p <= 65535 {
+				return val
+			}
+		}
+		if i == 1 && len(os.Args) == 2 && !strings.HasPrefix(arg, "-") {
+			if p, err := strconv.Atoi(arg); err == nil && p > 0 && p <= 65535 {
+				return arg
+			}
+		}
+	}
+
+	for _, envKey := range []string{"PORT", "MYSSH_PORT", "SERVER_PORT"} {
+		if val := strings.TrimSpace(os.Getenv(envKey)); val != "" {
+			if p, err := strconv.Atoi(val); err == nil && p > 0 && p <= 65535 {
+				return val
+			}
+		}
+	}
+
+	return "8080"
+}
+
 // Load reads .env if present and loads configuration from environment variables.
 // If JWT_SECRET or MASTER_KEY are unset or sample values, it auto-generates secure keys
 // and persists them in data/.secrets (mode 0600).
 func Load() *Config {
 	loadDotEnv(".env")
 
-	port := getEnv("PORT", "8080")
+	port := parsePort()
 	dbPath := getEnv("DB_PATH", "data/myssh.db")
 	recordingsDir := getEnv("RECORDINGS_DIR", "data/recordings")
 	recordingRetentionDays := getEnvInt("RECORDING_RETENTION_DAYS", 30)

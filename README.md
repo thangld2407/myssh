@@ -69,6 +69,11 @@ docker run -d \
 
 Access the dashboard at: **`http://localhost:8080`**
 
+> [!TIP]
+> **Custom Port Configuration**:
+> - **Standard Docker Port Mapping (e.g. Host Port 9090)**: Use `-p 9090:8080` to map host port 9090 to container port 8080: `docker run -d -p 9090:8080 -v myssh_data:/app/data ghcr.io/thangld2407/myssh:latest`
+> - **Internal Port Overriding (e.g. Port 9090)**: Pass `-e PORT=9090 -p 9090:9090` (or CLI argument `myssh -p 9090`). MySSH automatically adapts its internal listener, dynamic Docker healthcheck, and CORS origins.
+
 ### Option 2: Pre-Compiled Single Binary (No Docker, Zero Runtime Dependencies)
 
 Download the self-contained binary (~26MB, includes all web assets via `go:embed`) from [GitHub Releases](https://github.com/thangld2407/myssh/releases):

@@ -33,6 +33,13 @@ func TestIsOriginAllowed(t *testing.T) {
 		t.Errorf("Arbitrary external origin must be rejected by default")
 	}
 
+	// 3b. Private IP range allowance by default (LAN/VPN access on custom ports)
+	rLAN, _ := http.NewRequest("GET", "http://192.168.1.50:9090/ws", nil)
+	rLAN.Header.Set("Origin", "http://192.168.1.50:9090")
+	if !IsOriginAllowed(rLAN, nil) {
+		t.Errorf("Private LAN origin must be allowed by default")
+	}
+
 	// 4. Explicit ALLOWED_ORIGINS whitelist
 	whitelist := []string{"https://myssh.mycorp.internal", "https://admin.mycorp.internal"}
 	r5, _ := http.NewRequest("GET", "http://myssh.mycorp.internal/ws", nil)
