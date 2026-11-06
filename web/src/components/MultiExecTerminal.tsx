@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
 import { Zap, X, Terminal as TerminalIcon, Send, RefreshCw, Layers } from 'lucide-react';
 import { Host } from '../types';
 import { api, getAuthToken } from '../services/api';
@@ -82,6 +83,11 @@ export const MultiExecTerminal: React.FC<MultiExecTerminalProps> = ({ hosts, onC
     term.loadAddon(new WebLinksAddon());
 
     term.open(el);
+    try {
+      const webglAddon = new WebglAddon();
+      webglAddon.onContextLoss(() => webglAddon.dispose());
+      term.loadAddon(webglAddon);
+    } catch {}
     setTimeout(() => {
       try {
         fitAddon.fit();

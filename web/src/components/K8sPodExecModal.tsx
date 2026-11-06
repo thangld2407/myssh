@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
 import { X, Maximize2, Minimize2, RefreshCw, Terminal as TerminalIcon, Box } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { K8sPod } from '../types';
@@ -99,6 +100,12 @@ export const K8sPodExecModal: React.FC<K8sPodExecModalProps> = ({
     term.loadAddon(fitAddon);
     term.loadAddon(webLinksAddon);
     term.open(terminalRef.current);
+
+    try {
+      const webglAddon = new WebglAddon();
+      webglAddon.onContextLoss(() => webglAddon.dispose());
+      term.loadAddon(webglAddon);
+    } catch {}
 
     setTimeout(() => {
       try {

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { WebglAddon } from '@xterm/addon-webgl';
 import { RefreshCw, X, Maximize2, Trash2, Clock, Terminal as TerminalIcon, HardDrive, Columns, Code2, Zap, Activity } from 'lucide-react';
 import { Host, FeatureFlags } from '../types';
 import { api, getAuthToken } from '../services/api';
@@ -120,6 +121,17 @@ export const TerminalTab: React.FC<TerminalTabProps> = ({ host, onClose, feature
     term.loadAddon(fitAddon);
     term.loadAddon(webLinksAddon);
     term.open(terminalRef.current);
+
+    // Hardware-accelerated GPU rendering via WebGL with fallback to DOM renderer
+    try {
+      const webglAddon = new WebglAddon();
+      webglAddon.onContextLoss(() => {
+        webglAddon.dispose();
+      });
+      term.loadAddon(webglAddon);
+    } catch {
+      // Gracefully fall back to DOM renderer
+    }
 
     // Initial fit
     setTimeout(() => {
